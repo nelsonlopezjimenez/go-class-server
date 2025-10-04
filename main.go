@@ -13,6 +13,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	CIS "localhost/CIS/modules"
@@ -28,13 +30,79 @@ var (
 
 var (
 	releaseVersion = "v1.1.2"
-	releaseDate = "10/2/2025"
+	releaseDate    = "10/2/2025"
 )
 
 var updateIP string
 
 func usage() {
 	fmt.Println("usage: ClassServer -flag options")
+}
+
+func getPublicDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "C:/Users/Public/ClassServer"
+	case "darwin":
+		return "Users/Shared/ClassServer"
+	default:
+		return "/var/lib/ClassServer"
+	}
+}
+
+func getWebsitesDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "C:/websites"
+	case "darwin":
+		return "/Users/Shared/websites"
+	default:
+		return "/var/www/websites"
+	}
+}
+
+func getCanvasCacheDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "C:/Users/Public/CANVAS_FILE_CACHES"
+	case "darwin":
+		return "/Users/Shared/CANVAS_FILE_CACHES"
+	default:
+		return "/var/lib/CANVAS_FILE_CACHES"
+	}
+}
+
+func getVideosDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "C:/Users/Public/Videos"
+	case "darwin":
+		return "/Users/Shared/Videos"
+	default:
+		return "/var/lib/Videos"
+	}
+}
+
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		// Try common browsers in order
+		browsers := []string{"xdg-open", "google-chrome", "firefox", "chromium"}
+		for _, browser := range browsers {
+			cmd = exec.Command(browser, url)
+			break
+		}
+	}
+	if cmd == nil {
+		return fmt.Errorf("no suitable browser found")
+	}
+	return cmd.Start()
 }
 
 // The main package must contain a main function which will be executed on run
@@ -46,7 +114,7 @@ func main() {
 
 	// Creates a new logger instance to display info from server
 	serverLog := log.New(os.Stdout, "[Server] ", log.LstdFlags)
-	serverLog.Println("CIS Class Server", releaseVersion, "released on", releaseDate )
+	serverLog.Println("CIS Class Server", releaseVersion, "released on", releaseDate)
 	if isDev {
 		serverLog.Println("Running in dev mode.")
 		updateIP = "http://localhost:3000"
@@ -58,9 +126,17 @@ func main() {
 		updateIP = "http://192.168.1.28:3000"
 		serverLog.Println("The update  URL is:", updateIP)
 	}
+
+	//   Get platform-specific directories
+	publicDir := getPublicDir()
+	websitesDir := getWebsitesDir()
+	canvasCacheDir := getCanvasCacheDir()
+	videosDir := getVideosDir()
+
 	// The server var creates the default gin engine instance
 	server := gin.Default()
 	api := server.Group("/api")
+
 	// The following line defines a static asset folder
 	fsys, err := CIS.GetFileSystemHandler()
 	if err != nil {
@@ -68,35 +144,50 @@ func main() {
 	}
 	server.StaticFS("/assets", fsys)
 	server.Static("/images", "./data/images")
-	_, staticErr := os.Stat("C:/Users/Public/ClassServer/static")
+
+	//   Create static directory and symlinks
+	staticDir := filepath.Join(publicDir, "static")
+
+	_, staticErr := os.Stat(staticDir)
 	if staticErr != nil {
 		if os.IsNotExist(staticErr) {
-			err := os.Mkdir("C:/Users/Public/classServer/static/", 0777)
+			err := os.Mkdir(staticDir, 0755)
 			if err != nil {
 				serverLog.Println("Error creating /static:", err)
 			} else {
-				cfcErr := os.Symlink("C:/Users/Public/CANVAS_FILE_CACHES/", "C:/Users/Public/classServer/static/CANVAS_FILE_CACHES")
-				if cfcErr != nil {
-					fmt.Println("cfc:", cfcErr)
+				//  Create sumlinks for CANVAS_FILE_CACHES
+				cfcLink := filepath.Join(statidDir, "CANVAS_FILE_CACHES")
+				if _, err := os.Lstat(cfcLink); os.IsNotExist(err) {
+					cfcErr := os.Symlink(canvasCacheDir, cfcLink)
+
+					if cfcErr != nil {
+						serverLog.Println("cfc symlink error:", cfcErr)
+					}
 				}
-				videoErr := os.Symlink("C:/Users/Public/Videos/", "C:/Users/Public/classServer/static/Videos")
-				if videoErr != nil {
-					fmt.Println("video:", videoErr)
+
+				//  Create symlinks for Videos
+				videoLink := filepath.Join(staticDir, "Videos")
+				if _, err := os.Lstat(videoLink); os.IsNotExist(err) {
+					videoErr := os.Symlink(videosDir, videoLink)
+					if videoErr != nil {
+						serverLog.Println("video symlink error:", videoErr)
+					}
 				}
 			}
 		}
 	}
 
-	server.Static("/static", "C:/Users/Public/ClassServer/static")
+	server.Static("/static", staticDir)
 
 	Gitea := CIS.NetworkPinger{Url: updateIP, Timeout: 10}
 	// Goroutine to check for lesson repo and updates if there is a connection
 	go Gitea.Update()
 	// This middleware function returns the requested offline website to the client
 	server.GET("/websites/*url", func(ctx *gin.Context) {
-		// ctc.Param returns the wildcard value in the url path
+		// ctx.Param returns the wildcard value in the url path
 		param := ctx.Param("url")
-		ctx.File("C:/websites" + param)
+		filepath := filepath.Join(websitesDir, filepath.FromSlash(param))
+		ctx.File(filepath)
 	})
 
 	// This allows the available w3schools examples to execute
@@ -228,7 +319,7 @@ func main() {
 		// Remember: the property names must be UPPERCASE in order to be exported
 		// Type Outbound defines what the structure should contain.
 
-		newList := CIS.RootDir{Root: "C:/websites"}
+		newList := CIS.RootDir{Root: websitesDir}
 		newListTest := newList.ListBuilder()
 		type testStruct struct {
 			Domain    string
@@ -242,9 +333,9 @@ func main() {
 			isHidden := strings.HasPrefix(item, ".")
 			if !isHidden {
 				var index string
-				currentDir := CIS.RootDir{Root: "C:/websites/" + item}
+				currentDir := CIS.RootDir{Root: filepath.Join(websitesDir, item)}
 				currentDir.FindIndex(func(path, fileName string) {
-					index = path + "/" + fileName
+					index = filepath.Join(path, fileName)
 				})
 				pageUpdated := true
 				isInstalled := false
@@ -268,17 +359,23 @@ func main() {
 		ctx.JSON(200, gitOut)
 	})
 
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		serverLog.Println("there was an error getting the user's home dir:", err)
-	}
+	// userHome, err := os.UserHomeDir()
+	// if err != nil {
+	// 	serverLog.Println("there was an error getting the user's home dir:", err)
+	// }
 
-	userHome = strings.ReplaceAll(userHome, "\\", "/")
+	// userHome = strings.ReplaceAll(userHome, "\\", "/")
 
+	// if !isDev {
+	// 	cmd := exec.Command(userHome+"/AppData/Local/Google/Chrome/Application/chrome.exe", "http://localhost:"+*port)
+	// 	if err := cmd.Start(); err != nil {
+	// 		serverLog.Println("Error opening Chrome:", err)
+	// 	}
+	// }
 	if !isDev {
-		cmd := exec.Command(userHome+"/AppData/Local/Google/Chrome/Application/chrome.exe", "http://localhost:"+*port)
-		if err := cmd.Start(); err != nil {
-			serverLog.Println("Error opening Chrome:", err)
+		url := "http://localhost:" + *port
+		if err := openBrowser(url); err != nil {
+			serverLog.PrintLn("Error opening browser:", err)
 		}
 	}
 
