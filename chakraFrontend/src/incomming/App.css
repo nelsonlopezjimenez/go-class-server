@@ -1,0 +1,146 @@
+* {
+  box-sizing: border-box;
+}
+
+nav {
+  /* background-color: #99bbd9; */
+  width: 100%;
+  /* height: 30px; */
+  position: fixed;
+  top: 0;
+  overflow: auto;
+  border-radius: 0;
+}
+
+nav ul {
+  list-style-type: none;
+}
+
+nav li {
+  font-size: 18px;
+  font-weight: bold;
+  /* padding: 10px; */
+  padding-left: 10px;
+  /* color: #06548a; */
+  display: block;
+  float: left;
+  text-align: center;
+}
+
+nav li:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#content-display {
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+.page-wrapper {
+  /* background-color: #f3fffc; */
+  margin: 0% 10%;
+}
+
+.info-box {
+  width: 45%;
+  float: left;
+  /* background-color: #06548a; */
+  margin: 10px;
+  padding: 5px;
+}
+
+.content-links {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+/* .outline { */
+/* color: #000000; */
+/* } */
+
+p {
+  text-indent: 5mm;
+}
+
+/* a {
+  color: #99bbd9;
+} */
+
+/* #localLinks a {
+  color:#04406b;
+  font-weight: 900; */
+/* } */
+
+footer {
+  /* background-color: #99bbd9; */
+  /* color: #06548a; */
+  height: 100px;
+  margin: 0 10%;
+  text-align: center;
+  font-weight: bolder;
+  padding-top: 15px;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  text-decoration: underline;
+}
+
+.menu-container {
+  margin-left: 5%;
+}
+
+#onPageList li {
+  cursor: pointer;
+  font-weight: bolder;
+  /* color:#06548a; */
+  list-style-type: none;
+}
+
+#onPageList li:hover {
+  /* color: #04406b; */
+}
+
+#page-links {
+  border: 2px dotted lightsalmon;
+  /* background-color: #99bbd9; */
+  width: 40vw;
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+}
+
+.hidden {
+  display: none;
+}
+
+.line-1,
+.line-2,
+.line-3 {
+  width: 35px;
+  height: 5px;
+  /* background-color: #99bbd9; */
+  margin: 6px 0;
+  transition: 0.4s;
+}
+
+.change .line-1 {
+  transform: translate(0, 11px) rotate(-45deg);
+  /* background-color: #06548a; */
+}
+
+.change .line-2 {
+  opacity: 0;
+  /* background-color: #06548a; */
+}
+
+.change .line-3 {
+  transform: translate(0, -11px) rotate(45deg);
+  /* background-color: #06548a; */
+}

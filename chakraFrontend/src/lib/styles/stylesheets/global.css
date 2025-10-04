@@ -1,0 +1,209 @@
+.markdown-content {
+  max-width: none;
+  line-height: 1.625;
+  --tw-text-opacity: 1;
+  /* color: rgb(31 41 55 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content h1 {
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  border-bottom-width: 1px;
+  --tw-border-opacity: 1;
+  border-color: rgb(191 219 254 / var(--tw-border-opacity, 1));
+  padding-bottom: 0.5rem;
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  --tw-text-opacity: 1;
+  /* color: rgb(30 64 175 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content h2 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 600;
+  --tw-text-opacity: 1;
+  /* color: rgb(29 78 216 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  --tw-text-opacity: 1;
+  /* color: rgb(37 99 235 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content h4 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 500;
+  --tw-text-opacity: 1;
+  /* color: rgb(59 130 246 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content p {
+  margin-bottom: 1rem;
+  line-height: 1.75rem;
+  --tw-text-opacity: 1;
+  /* color: rgb(55 65 81 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content ul {
+  margin-bottom: 1.5rem;
+  margin-left: 1.5rem;
+}
+.markdown-content ul > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
+}
+.markdown-content ol {
+  margin-bottom: 1.5rem;
+  margin-left: 1.5rem;
+}
+.markdown-content ol > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
+}
+.markdown-content li {
+  line-height: 1.5rem;
+  --tw-text-opacity: 1;
+  /* color: rgb(55 65 81 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content ul li {
+  list-style-type: disc;
+}
+.markdown-content ol li {
+  list-style-type: decimal;
+}
+.markdown-content strong {
+  font-weight: 600;
+  --tw-text-opacity: 1;
+  /* color: rgb(17 24 39 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content em {
+  font-style: italic;
+  --tw-text-opacity: 1;
+  /* color: rgb(75 85 99 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content code {
+  border-radius: 0.25rem;
+  border-width: 1px;
+  --tw-bg-opacity: 1;
+  background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1));
+  padding: 0.25rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation
+    Mono, Courier New, monospace;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  --tw-text-opacity: 1;
+  /* color: rgb(31 41 55 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content pre {
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  --tw-bg-opacity: 1;
+  background-color: rgb(17 24 39 / var(--tw-bg-opacity, 1));
+  padding: 1.5rem;
+  --tw-text-opacity: 1;
+  /* color: rgb(243 244 246 / var(--tw-text-opacity, 1)); */
+  --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px
+    rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px
+    var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.markdown-content pre code {
+  border-style: none;
+  background-color: transparent;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation
+    Mono, Courier New, monospace;
+  --tw-text-opacity: 1;
+  /* color: rgb(243 244 246 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content blockquote {
+  margin-bottom: 1.5rem;
+  border-left-width: 4px;
+  --tw-border-opacity: 1;
+  border-color: rgb(59 130 246 / var(--tw-border-opacity, 1));
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 246 255 / var(--tw-bg-opacity, 1));
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  font-style: italic;
+  --tw-text-opacity: 1;
+  /* color: rgb(30 64 175 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content table {
+  margin-bottom: 1.5rem;
+  width: 100%;
+  border-collapse: collapse;
+  border-width: 1px;
+  --tw-border-opacity: 1;
+  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));
+}
+.markdown-content th {
+  border-width: 1px;
+  --tw-border-opacity: 1;
+  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));
+  --tw-bg-opacity: 1;
+  /* background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1)); */
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+.markdown-content td {
+  border-width: 1px;
+  --tw-border-opacity: 1;
+  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));
+  padding: 0.5rem 1rem;
+}
+.markdown-content a {
+  --tw-text-opacity: 1;
+  /* color: rgb(37 99 235 / var(--tw-text-opacity, 1)); */
+  text-decoration-line: underline;
+  transition-property: color, background-color, border-color,
+    text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0.15s;
+}
+.markdown-content a:hover {
+  --tw-text-opacity: 1;
+  /* color: rgb(30 64 175 / var(--tw-text-opacity, 1)); */
+}
+.markdown-content hr {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  border-top-width: 2px;
+  --tw-border-opacity: 1;
+  border-color: rgb(229 231 235 / var(--tw-border-opacity, 1));
+}
+.markdown-content .language-python {
+  --tw-text-opacity: 1;
+  color: rgb(134 239 172 / var(--tw-text-opacity, 1));
+}
+.markdown-content .language-javascript {
+  --tw-text-opacity: 1;
+  /* color:red; */
+  color: rgb(253 224 71 / var(--tw-text-opacity, 1));
+}
+.markdown-content .language-yaml {
+  --tw-text-opacity: 1;
+  /* color:red; */
+  color: rgb(253 224 71 / var(--tw-text-opacity, 1));
+}
+.markdown-content .language-html {
+  --tw-text-opacity: 1;
+  color: rgb(147 197 253 / var(--tw-text-opacity, 1));
+}
+.markdown-content .language-css {
+  --tw-text-opacity: 1;
+  color: rgb(249 168 212 / var(--tw-text-opacity, 1));
+}

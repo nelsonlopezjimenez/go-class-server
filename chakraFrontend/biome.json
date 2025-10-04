@@ -1,0 +1,92 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.1/schema.json",
+  "files": {
+    "include": ["src", "*.config.ts"],
+    "ignore": [".react-router", "*.d.ts", "src/components/ui", "src/incomming"]
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "lineEnding": "crlf"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "useSemanticElements": "error",
+        "useKeyWithClickEvents": "off"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "off",
+        "noUselessStringConcat": "error",
+        "noUselessUndefinedInitialization": "error",
+        "useSimplifiedLogicExpression": "off",
+        "noVoid": "warn"
+      },
+      "correctness": {
+        "noUnusedImports": "warn",
+        "noUnusedVariables": "warn",
+        "noUnusedFunctionParameters": "warn",
+        "useHookAtTopLevel": "error",
+        "useExhaustiveDependencies": "off"
+      },
+      "nursery": {
+        "noDuplicateElseIf": "error"
+      },
+      "performance": {
+        "noBarrelFile": "error",
+        "useTopLevelRegex": "error"
+      },
+      "style": {
+        "useBlockStatements": "error",
+        "useCollapsedElseIf": "error",
+        "useDefaultSwitchClause": "error",
+        "useConsistentArrayType": {
+          "level": "error",
+          "options": {
+            "syntax": "generic"
+          }
+        },
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "filenameCases": ["camelCase", "PascalCase", "kebab-case"],
+            "strictCase": false
+          }
+        }
+      },
+      "suspicious": {
+        "noConsole": "off",
+        "noConsoleLog": "off",
+        "noEmptyBlockStatements": "error",
+        "useAwait": "error",
+        "noArrayIndexKey": "off",
+        "noExplicitAny": "off",
+        "noImplicitAnyLet": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
+  "overrides": [
+    {
+      "include": ["src/lib/pages/**/*", "*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    }
+  ]
+}

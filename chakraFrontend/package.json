@@ -1,0 +1,76 @@
+{
+  "name": "cis-class-server-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "author": [
+    "Rocky Connor",
+    "Matthew Wellington"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.11.x"
+  },
+  "scripts": {
+    "move": "sh ./copybuild.sh",
+    "dev": "react-router dev ",
+    "build": " npm run biome:fix && react-router build",
+    "preview": "npm run build && vite preview",
+    "deploy": "npm run build && npm run move && cd .. && sh ./build.sh",
+    "chakra": "npx @chakra-ui/cli typegen ./src/lib/styles/theme/theme.ts",
+    "biome:check": "biome check",
+    "biome:fix": "biome check --write",
+    "biome:ci": "biome ci",
+    "typegen": "react-router typegen",
+    "type:check": "npx typegen && tsc",
+    "test": "vitest run",
+    "test:ui": "vitest --ui --coverage",
+    "test:coverage": "vitest --coverage run",
+    "knip": "knip",
+    "push-release": "git push --follow-tags origin main",
+    "extract": "tar -vxf node_modules.tgz",
+    "compress": "tar -acf node_modules.tgz node_modules"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "3.19.2",
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "^11.10.6",
+    "@fontsource-variable/plus-jakarta-sans": "5.2.5",
+    "@react-router/node": "7.6.2",
+    "@reduxjs/toolkit": "2.8.2",
+    "isbot": "5.1.28",
+    "lodash": "^4.17.20",
+    "markdown-it": "^14.0.0",
+    "next-themes": "0.4.6",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-icons": "5.5.0",
+    "react-redux": "9.2.0",
+    "react-router": "7.6.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@chakra-ui/cli": "3.19.2",
+    "@react-router/dev": "7.6.2",
+    "@types/lodash": "^4.14.202",
+    "@types/markdown-it": "^12.2.3",
+    "@types/node": "22.15.29",
+    "@types/react": "19.1.6",
+    "@types/react-dom": "19.1.6",
+    "@vitest/coverage-v8": "3.2.1",
+    "@vitest/ui": "3.2.1",
+    "knip": "5.60.1",
+    "rollup": "4.41.1",
+    "rollup-plugin-visualizer": "6.0.1",
+    "typescript": "5.8.3",
+    "vite": "6.3.5",
+    "vite-plugin-checker": "0.9.3",
+    "vite-plugin-pwa": "1.0.0",
+    "vite-tsconfig-paths": "5.1.4",
+    "vitest": "3.2.1"
+  },
+  "overrides": {
+    "@types/react-transition-group": "4.4.10",
+    "@mui/utils": "5.12.0",
+    "uc.micro": "2.0.0"
+  }
+}
