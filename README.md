@@ -187,3 +187,110 @@ go mod verify
 ```
 
 The most common workflow is `go run .` for development and `go build` for creating executables.
+
+## Code Assessment
+
+### Critical Cross-Platform Issues
+
+**Hard-coded Windows paths throughout:**
+```go
+"C:/Users/Public/ClassServer/static"
+"C:/websites"
+"C:/Users/Public/CANVAS_FILE_CACHES/"
+userHome+"/AppData/Local/Google/Chrome/Application/chrome.exe"
+```
+
+This code will fail on Linux/macOS. These systems don't have `C:` drives or `AppData` directories.
+
+**Problems:**
+1. Application won't start on non-Windows systems (path errors)
+2. Chrome launch will fail (hardcoded Windows path)
+3. Static file serving breaks completely
+4. Symlink creation uses Windows-specific paths
+
+### Recommended Fixes
+
+**1. Use `os.UserConfigDir()` and `os.UserCacheDir()`:**
+```go
+configDir, _ := os.UserConfigDir()  // Returns platform-specific config dir
+dataDir := filepath.Join(configDir, "ClassServer")
+```
+
+**2. Make Chrome path cross-platform:**
+```go
+func openBrowser(url string) error {
+    var cmd *exec.Cmd
+    switch runtime.GOOS {
+    case "windows":
+        cmd = exec.Command("cmd", "/c", "start", url)
+    case "darwin":
+        cmd = exec.Command("open", url)
+    case "linux":
+        cmd = exec.Command("xdg-open", url)
+    default:
+        return fmt.Errorf("unsupported platform")
+    }
+    return cmd.Start()
+}
+```
+
+**3. Use `filepath.Join()` everywhere:**
+```go
+// Instead of:
+"C:/websites/" + item
+
+// Use:
+filepath.Join(websitesDir, item)
+```
+
+**4. Make base paths configurable:**
+```go
+var (
+    websitesDir = flag.String("websites", getDefaultWebsitesDir(), "Websites directory")
+    staticDir   = flag.String("static", getDefaultStaticDir(), "Static files directory")
+)
+
+func getDefaultWebsitesDir() string {
+    if runtime.GOOS == "windows" {
+        return "C:/websites"
+    }
+    home, _ := os.UserHomeDir()
+    return filepath.Join(home, "websites")
+}
+```
+
+### Other Issues
+
+**Security concerns:**
+- File permissions `0777` is overly permissive
+- No input validation on `ctx.Param()` values
+- Direct file serving without sanitization could allow directory traversal
+
+**Error handling:**
+- Many errors logged but execution continues
+- `serverLog.Panicln()` will crash the server on missing files
+
+**Code quality:**
+- Mixed case in directory names (`classServer` vs `ClassServer`)
+- Unused imports commented out (should remove)
+- Hardcoded IP address `192.168.1.28` won't work for others
+
+### Minimal Fix for Cross-Platform
+
+At minimum, add this at the top:
+```go
+import (
+    "path/filepath"
+    "runtime"
+)
+
+var websitesRoot = func() string {
+    if runtime.GOOS == "windows" {
+        return "C:/websites"
+    }
+    home, _ := os.UserHomeDir()
+    return filepath.Join(home, "websites")
+}()
+```
+
+Then replace all hardcoded paths with variables. The current code is Windows-only and will fail immediately on other operating systems.
