@@ -10,12 +10,11 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	CIS "localhost/CIS/modules"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
-
-	CIS "localhost/CIS/modules"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +27,7 @@ var (
 
 var (
 	releaseVersion = "v1.1.2"
-	releaseDate = "10/2/2025"
+	releaseDate    = "10/2/2025"
 )
 
 var updateIP string
@@ -46,7 +45,7 @@ func main() {
 
 	// Creates a new logger instance to display info from server
 	serverLog := log.New(os.Stdout, "[Server] ", log.LstdFlags)
-	serverLog.Println("CIS Class Server", releaseVersion, "released on", releaseDate )
+	serverLog.Println("CIS Class Server", releaseVersion, "released on", releaseDate)
 	if isDev {
 		serverLog.Println("Running in dev mode.")
 		updateIP = "http://localhost:3000"
