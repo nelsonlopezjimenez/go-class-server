@@ -88,6 +88,34 @@ func (dir RootDir) ListBuilder() []string {
 	return linkList
 }
 
+func (dir RootDir) HasIndex() bool {
+	root := os.DirFS(dir.Root)
+	rootDir, err := fs.ReadDir(root, ".")
+	if err != nil {
+		fmt.Println("There was an error opening the dir", err)
+	}
+
+	var haveIndex bool = false
+	for _, entry := range rootDir {
+		if entry.Type().IsRegular() && entry.Name() == "index.html" {
+			haveIndex = true
+
+			return haveIndex
+		}
+	}
+
+	if !haveIndex {
+		for _, entry := range rootDir {
+			if !entry.Type().IsRegular() && !haveIndex {
+				deeperLook := RootDir{dir.Root + "/" + entry.Name()}
+				deeperLook.HasIndex()
+
+			}
+		}
+	}
+	return haveIndex
+}
+
 func findFileExt(name string, ext string) bool {
 	re := regexp.MustCompile(ext + "$")
 

@@ -27,8 +27,8 @@ var (
 )
 
 var (
-	releaseVersion = "v1.1.0"
-	releaseDate = "10/1/2025"
+	releaseVersion = "v1.1.2"
+	releaseDate = "10/2/2025"
 )
 
 var updateIP string
@@ -212,7 +212,7 @@ func main() {
 	api.GET("/lessons", func(ctx *gin.Context) {
 		testList := CIS.RootDir{Root: "./data/markdown/lessons"}
 
-		testSlice := map[string][]string{"q1": {}, "q2": {}, "q3": {}, "q4": {}}
+		testSlice := map[string][]string{}
 
 		// fmt.Println(testSlice)
 		testList.RecursiveSearch(".md", func(path string, fileName string) {

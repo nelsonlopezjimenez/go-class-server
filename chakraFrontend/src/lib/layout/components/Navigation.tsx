@@ -1,15 +1,13 @@
 //@ts-nocheck
-import { ColorModeButton, useColorMode } from '@/components/ui/color-mode';
+import { ColorModeButton } from '@/components/ui/color-mode';
 import { LinkButton } from '@/components/ui/link-button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Tooltip } from '@/components/ui/tooltip';
 import { locationChecker } from '@/helpers/helpers';
-import trident from '@/incomming/assets/EdmondsTrident.png';
-import tridentLight from '@/incomming/assets/EdmondsTridentLight.png';
+import { version } from '@/version';
 import { Flex } from '@chakra-ui/react/flex';
 import { Float } from '@chakra-ui/react/float';
 import { Icon } from '@chakra-ui/react/icon';
-import { Image } from '@chakra-ui/react/image';
 import { useEffect, useState } from 'react';
 import { VscLinkExternal } from 'react-icons/vsc';
 import { useLocation, useNavigate } from 'react-router';
@@ -27,7 +25,6 @@ const Nav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [youAreHere, setYouAreHere] = useState('Home');
-  const { colorMode } = useColorMode();
 
   useEffect(() => {
     locationChecker(location, setYouAreHere);
@@ -96,13 +93,13 @@ const Nav: React.FC = () => {
           value={youAreHere}
           // onMouseEnter={() => prefetchLinks(4, { force: true })}
         />
-        <Image
-          id="logo"
+        <Flex
+          id="version"
           display={{ base: 'none', md: 'block' }}
-          style={{ height: '2.5em' }}
-          src={colorMode === 'light' ? tridentLight : trident}
-          alt="course logo"
-        />
+          // style={{ height: "2.5em" }}
+        >
+          v{version}
+        </Flex>
       </Flex>
     </>
   );

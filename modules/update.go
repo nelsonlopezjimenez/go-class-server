@@ -18,6 +18,8 @@ type NetworkPinger struct {
 	Timeout int64
 }
 
+var siteRoot = RootDir{"C:/websites"}
+
 // Creates a logger instance specifically for the update functions to inform user of update related events
 var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
 
@@ -41,6 +43,7 @@ func (np NetworkPinger) checkForServer() bool {
 // git pull command every np.Timeout minutes to update the monorepo and prints
 // the results of the command to the console.
 func (np NetworkPinger) Update() {
+	deinitAll()
 	interval := time.Minute
 	if gin.Mode() == "debug" {
 		interval = time.Second
@@ -50,6 +53,7 @@ func (np NetworkPinger) Update() {
 	if np.checkForServer() {
 		checkForDependencies(np.Url)
 		updateClassResources()
+		pullWebsitesSuperproject()
 		hasCheckedDeps = true
 	}
 	for range checkInterval.C {
@@ -60,6 +64,7 @@ func (np NetworkPinger) Update() {
 			if hasCheckedDeps {
 				updateClassResources()
 				if gin.Mode() == "release" {
+					updateLogger.Println("Running pullWebsitesSuperpriject()")
 					siteErr := pullWebsitesSuperproject()
 					if siteErr != nil {
 						updateLogger.Println("Error pulling sites:", siteErr)
@@ -137,7 +142,9 @@ func checkForDependencies(url string) {
 
 func getWebsitesSuperproject() error {
 	websitesSuper := exec.Command("git", "clone", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-	websitesSubmodules := exec.Command("git", "submodule", "init")
+	// Commented out in order to allow recursive update WITHOUT downloading ALL websites...
+	// Ask me how I know...
+	// websitesSubmodules := exec.Command("git", "submodule", "init")
 	websitesSuper.Dir = "C:/"
 	out, err := websitesSuper.CombinedOutput()
 	if err != nil {
@@ -146,20 +153,20 @@ func getWebsitesSuperproject() error {
 	}
 
 	updateLogger.Println("Cloned websites superproject:", string(out))
-	websitesSubmodules.Dir = "C:/websites"
-	subOut, err := websitesSubmodules.CombinedOutput()
-	if err != nil {
-		updateLogger.Panicln("There was a problem initializing subs!!!:", err)
-		return err
-	}
+	// websitesSubmodules.Dir = "C:/websites"
+	// subOut, err := websitesSubmodules.CombinedOutput()
+	// if err != nil {
+	// 	updateLogger.Panicln("There was a problem initializing subs!!!:", err)
+	// 	return err
+	// }
 
-	updateLogger.Println("Submodule out:", string(subOut))
+	// updateLogger.Println("Submodule out:", string(subOut))
 	return nil
 
 }
 
 func GetWebsiteModule(url string) string {
-	updateCmd := exec.Command("git", "submodule", "update", url)
+	updateCmd := exec.Command("git", "submodule", "update", "--init", url)
 	updateCmd.Dir = "C:/websites"
 	out, err := updateCmd.CombinedOutput()
 	if err != nil {
@@ -180,6 +187,7 @@ func pullWebsitesSuperproject() error {
 	}
 
 	updateLogger.Println(string(out))
+	submoduleUpdateAll()
 
 	return nil
 
@@ -194,4 +202,50 @@ func updateClassResources() {
 		updateLogger.Println("err:", err)
 	}
 
+}
+
+// updateSubmodule should run for every submodule in the websites folder
+func updateSubmodule(path string) {
+	subUpdate := exec.Command("git", "submodule", "update", "--remote")
+	subUpdate.Dir = path
+	output, err := subUpdate.CombinedOutput()
+	if err != nil {
+		updateLogger.Println("Error updating website", path+":", err)
+	}
+
+	updateLogger.Println(path+":", string(output))
+}
+
+func submoduleUpdateAll() {
+	allModules := siteRoot.ListBuilder()
+
+	for _, site := range allModules {
+		sitePath := RootDir{siteRoot.Root + "/" + site}
+		if sitePath.HasIndex() {
+			updateSubmodule(sitePath.Root)
+		}
+	}
+}
+
+// deinitAll will recursively check each submodule for an index file and if found, deinitialze the repo.
+func deinitAll() {
+	allRepos := siteRoot.ListBuilder()
+
+	for _, repo := range allRepos {
+		subs := exec.Command("git", "submodule", "deinit", "--", repo)
+		repoPath := RootDir{siteRoot.Root + "/" + repo}
+		if !repoPath.HasIndex() {
+			updateLogger.Println("finding stuff")
+			subs.Dir = siteRoot.Root
+			out, err := subs.CombinedOutput()
+			if err != nil {
+				updateLogger.Println("Err in deinit:", err)
+			}
+			updateLogger.Println(repo+":", string(out))
+
+			// }
+		} else {
+			updateSubmodule(repoPath.Root)
+		}
+	}
 }
