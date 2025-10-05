@@ -1,0 +1,2 @@
+import{w as a,o as e}from"./chunk-NL6KNZEE-DP164oF9.js";import{g as t}from"./apiSlice-BSTROV0y.js";import{H as o}from"./heading-DiwzDhlz.js";import"./create-recipe-context-CbGtCrS1.js";import"./factory-CpKR1Kqy.js";const p=a(function(){const{data:r,isSuccess:n}=t("calendar");return n?e.jsx(e.Fragment,{children:e.jsx("div",{dangerouslySetInnerHTML:{__html:r},className:"markdown-content"})}):e.jsx(e.Fragment,{children:e.jsx(o,{children:"There May be a calendar here some day"})})});export{p as default};
+//# sourceMappingURL=index-yrLlbVvj.js.map

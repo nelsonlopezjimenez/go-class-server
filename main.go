@@ -156,7 +156,7 @@ func main() {
 				serverLog.Println("Error creating /static:", err)
 			} else {
 				//  Create sumlinks for CANVAS_FILE_CACHES
-				cfcLink := filepath.Join(statidDir, "CANVAS_FILE_CACHES")
+				cfcLink := filepath.Join(staticDir, "CANVAS_FILE_CACHES")
 				if _, err := os.Lstat(cfcLink); os.IsNotExist(err) {
 					cfcErr := os.Symlink(canvasCacheDir, cfcLink)
 
@@ -375,7 +375,7 @@ func main() {
 	if !isDev {
 		url := "http://localhost:" + *port
 		if err := openBrowser(url); err != nil {
-			serverLog.PrintLn("Error opening browser:", err)
+			serverLog.Println("Error opening browser:", err)
 		}
 	}
 

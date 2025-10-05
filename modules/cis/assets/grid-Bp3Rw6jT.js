@@ -1,0 +1,2 @@
+import{a as g,o as p}from"./chunk-NL6KNZEE-DP164oF9.js";import{e as w}from"./factory-CpKR1Kqy.js";const x=g.forwardRef(function(o,r){const{templateAreas:t,column:s,row:e,autoFlow:i,autoRows:a,templateRows:l,autoColumns:m,templateColumns:n,inline:d,...u}=o;return p.jsx(w.div,{...u,ref:r,css:[{display:d?"inline-grid":"grid",gridTemplateAreas:t,gridAutoColumns:m,gridColumn:s,gridRow:e,gridAutoFlow:i,gridAutoRows:a,gridTemplateRows:l,gridTemplateColumns:n},o.css]})});export{x as G};
+//# sourceMappingURL=grid-Bp3Rw6jT.js.map

@@ -1,11 +1,7 @@
-import { SimpleGrid } from '@chakra-ui/react';
-
 import trident from '@/incomming/assets/EdmondsTrident.png';
 import tridentLight from '@/incomming/assets/EdmondsTridentLight.png';
 
 import { useColorMode } from '@/components/ui/color-mode';
-import DATA from '@/incomming/data/courseInfo.js';
-import Info from '@/lib/pages/home/components/Info';
 import { Card } from '@chakra-ui/react/card';
 import { Image } from '@chakra-ui/react/image';
 
@@ -53,11 +49,11 @@ const Home = () => {
           </li>
         </Card.Body>
       </Card.Root>
-      <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
+      {/* <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
         {DATA.map((item) => {
           return <Info key={JSON.stringify(item)} item={item} />;
         })}
-      </SimpleGrid>
+      </SimpleGrid> */}
     </>
   );
 };

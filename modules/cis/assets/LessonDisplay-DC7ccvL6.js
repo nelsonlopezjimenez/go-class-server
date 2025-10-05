@@ -1,0 +1,2 @@
+import{w as t,A as a,o as s}from"./chunk-NL6KNZEE-DP164oF9.js";import{f as r}from"./apiSlice-BSTROV0y.js";const i=()=>{const e=a(),{data:n,isSuccess:o,isFetching:c}=r(`${e.section}/${e.lesson}`||"index");return s.jsx(s.Fragment,{children:o&&s.jsx("div",{className:"markdown-content",id:"content-display",dangerouslySetInnerHTML:{__html:n}})})},p=t(i);export{p as default};
+//# sourceMappingURL=LessonDisplay-DC7ccvL6.js.map

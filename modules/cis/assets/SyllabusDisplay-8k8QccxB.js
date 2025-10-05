@@ -1,0 +1,2 @@
+import{w as o,A as a,a as i,o as t}from"./chunk-NL6KNZEE-DP164oF9.js";import{g as r}from"./apiSlice-BSTROV0y.js";const c=()=>{const s=a(),{data:e,isSuccess:n,isFetching:l}=r(`syllabi/${s.section||"index"}`);return i.useEffect(()=>{console.log(s)},[s]),t.jsx(t.Fragment,{children:n&&t.jsx("div",{className:"markdown-content",id:"content-display",dangerouslySetInnerHTML:{__html:e}})})},p=o(c);export{p as default};
+//# sourceMappingURL=SyllabusDisplay-8k8QccxB.js.map

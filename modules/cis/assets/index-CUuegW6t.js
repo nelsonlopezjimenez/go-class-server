@@ -1,0 +1,2 @@
+import{w as s,o as t}from"./chunk-NL6KNZEE-DP164oF9.js";import{g as e}from"./apiSlice-BSTROV0y.js";const r=()=>{const{data:o,isSuccess:n}=e("about");return n?t.jsx("div",{className:"markdown-content",dangerouslySetInnerHTML:{__html:o},style:{margin:"0 10%"}}):t.jsx(t.Fragment,{children:t.jsx("p",{children:"It appears you have no information"})})},m=s(r);export{m as default};
+//# sourceMappingURL=index-CUuegW6t.js.map
