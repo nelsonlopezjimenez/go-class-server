@@ -88,6 +88,11 @@ func (dir RootDir) ListBuilder() []string {
 	return linkList
 }
 
+//	(RootDir).HasIndex
+//
+// This method recursively searches the supplied path
+// and returns true if the directory or a child contains
+// an index.html file. If it does not, the method returns false
 func (dir RootDir) HasIndex() bool {
 	root := os.DirFS(dir.Root)
 	rootDir, err := fs.ReadDir(root, ".")
