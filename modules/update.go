@@ -23,7 +23,8 @@ type IPInfo struct {
 	isConnected bool
 }
 
-var siteRoot = RootDir{"C:/websites"}
+var websitesPath = GetOSPaths().Websites
+var siteRoot = RootDir{websitesPath}
 
 // Creates a logger instance specifically for the update functions to inform user of update related events
 var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
@@ -114,7 +115,7 @@ func checkForDependencies(url string) {
 		}
 
 	}
-	_, websitesErr := os.Stat("C:/websites")
+	_, websitesErr := os.Stat(websitesPath)
 	websitesTicker := time.NewTicker(30 * time.Second)
 	if websitesErr != nil {
 		fmt.Println("No websites folder")
@@ -156,7 +157,7 @@ func getWebsitesSuperproject() error {
 // Executes git submodule command to initiate clone of selected submodule
 func GetWebsiteModule(url string) string {
 	updateCmd := exec.Command("git", "submodule", "update", "--init", "--remote", url)
-	updateCmd.Dir = "C:/websites"
+	updateCmd.Dir = websitesPath
 	out, err := updateCmd.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("There was an issue updating submodule", url+":", err)
@@ -171,7 +172,7 @@ func GetWebsiteModule(url string) string {
 // and then calls submoduleUpdateAll()
 func pullWebsitesSuperproject() error {
 	websitesPull := exec.Command("git", "pull", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-	websitesPull.Dir = "C:/websites"
+	websitesPull.Dir = websitesPath
 	out, err := websitesPull.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("Error pulling websites Superproject!!:", err)
