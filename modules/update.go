@@ -18,7 +18,8 @@ type NetworkPinger struct {
 	Timeout int64
 }
 
-var siteRoot = RootDir{"C:/websites"}
+var websitesPath = GetOSPaths().Websites
+var siteRoot = RootDir{websitesPath}
 
 // Creates a logger instance specifically for the update functions to inform user of update related events
 var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
@@ -121,7 +122,7 @@ func checkForDependencies(url string) {
 		}
 
 	}
-	_, websitesErr := os.Stat("C:/websites")
+	_, websitesErr := os.Stat(websitesPath)
 	websitesTicker := time.NewTicker(30 * time.Second)
 	if websitesErr != nil {
 		fmt.Println("No websites folder")
@@ -148,7 +149,7 @@ func getWebsitesSuperproject() error {
 	// Commented out in order to allow recursive update WITHOUT downloading ALL websites...
 	// Ask me how I know...
 	// websitesSubmodules := exec.Command("git", "submodule", "init")
-	websitesSuper.Dir = "C:/"
+	websitesSuper.Dir = GetRoot()
 	out, err := websitesSuper.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("Error cloning websites Superproject!!:", err)
@@ -170,7 +171,7 @@ func getWebsitesSuperproject() error {
 
 func GetWebsiteModule(url string) string {
 	updateCmd := exec.Command("git", "submodule", "update", "--init", "--remote", url)
-	updateCmd.Dir = "C:/websites"
+	updateCmd.Dir = websitesPath
 	out, err := updateCmd.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("There was an issue updating submodule", url+":", err)
@@ -182,7 +183,7 @@ func GetWebsiteModule(url string) string {
 
 func pullWebsitesSuperproject() error {
 	websitesPull := exec.Command("git", "pull", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-	websitesPull.Dir = "C:/websites"
+	websitesPull.Dir = websitesPath
 	out, err := websitesPull.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("Error pulling websites Superproject!!:", err)

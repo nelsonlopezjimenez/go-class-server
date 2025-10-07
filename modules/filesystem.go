@@ -79,3 +79,14 @@ func OpenBrowser(url string) error {
 
 	return cmd.Start()
 }
+
+func GetRoot() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "C:/"
+	case "darwin":
+		return "Users/Shared"
+	default:
+		return "/var/www"
+	}
+}
