@@ -1,0 +1,10 @@
+/data/**/*/
+frontend/node_modules
+frontend/build
+frontend/.vscode
+shell.sh
+go.sum
+data
+modules/cis/*
+CANVAS_FILE_CACHE
+build.sh
