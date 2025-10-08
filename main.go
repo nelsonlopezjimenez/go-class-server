@@ -256,7 +256,6 @@ func main() {
 				structSlice = append(structSlice, indexStruct)
 			}
 		}
-		fmt.Println(structSlice)
 
 		// Sends response  json data to the client
 		ctx.JSON(200, structSlice)
@@ -276,7 +275,6 @@ func main() {
 	}
 
 	// Starts the server on the specified port
-	fmt.Println(filePath)
 	server.Run(":" + *port)
 
 }
