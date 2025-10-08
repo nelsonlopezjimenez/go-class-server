@@ -42,7 +42,3 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/russross/blackfriday v1.1.0 => ../modules-from-go-home/github.com/russross/blackfriday/v2@v2.1.0
-
-// replace github.com/russross/blackfriday v1.5.2 => ../modules-from-go-home/github.com/russross/blackfriday@v1.5.2
