@@ -4,10 +4,7 @@ go 1.24.3
 
 replace github.com/gin-gonic/gin => ../modules/gin-master/
 
-require (
-	github.com/gin-gonic/gin v0.0.0-00010101000000-000000000000
-	github.com/russross/blackfriday v1.1.0
-)
+require github.com/gin-gonic/gin v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/bytedance/sonic v1.13.2 // indirect
@@ -45,7 +42,3 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/russross/blackfriday v1.1.0 => ../modules-from-go-home/github.com/russross/blackfriday/v2@v2.1.0
-
-// replace github.com/russross/blackfriday v1.5.2 => ../modules-from-go-home/github.com/russross/blackfriday@v1.5.2

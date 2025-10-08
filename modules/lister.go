@@ -45,7 +45,6 @@ func (dir RootDir) FindIndex(cb func(path string, fileName string)) {
 			if !entry.Type().IsRegular() && !haveIndex {
 				deeperLook := RootDir{dir.Root + "/" + entry.Name()}
 				deeperLook.FindIndex(cb)
-
 			}
 		}
 	}
@@ -88,6 +87,11 @@ func (dir RootDir) ListBuilder() []string {
 	return linkList
 }
 
+//	(RootDir).HasIndex
+//
+// This method recursively searches the supplied path
+// and returns true if the directory or a child contains
+// an index.html file. If it does not, the method returns false
 func (dir RootDir) HasIndex() bool {
 	root := os.DirFS(dir.Root)
 	rootDir, err := fs.ReadDir(root, ".")
