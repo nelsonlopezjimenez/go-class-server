@@ -26,8 +26,8 @@ var (
 )
 
 var (
-	releaseVersion = "v1.1.2"
-	releaseDate    = "10/2/2025"
+	releaseVersion = "v1.1.4"
+	releaseDate    = "10/8/2025"
 )
 
 var updateIP string
@@ -132,7 +132,7 @@ func main() {
 		fmt.Fprintf(ctx.Writer, "%s", index)
 	})
 
-	server.GET("/:allOther", func(ctx *gin.Context) {
+	server.GET("/:allOther/*any", func(ctx *gin.Context) {
 		// ctx.Redirect(301, "/")
 		index, err := CIS.GetIndex()
 		if err != nil {
