@@ -25,7 +25,6 @@ type LinkList struct {
 // for the first index.html file in its subdirectories and pass any found
 // to a callback for user defined processing.
 func (dir RootDir) FindIndex(cb func(path string, fileName string)) {
-	fmt.Println("RootDir:", dir)
 	root := os.DirFS(dir.Root)
 	rootDir, err := fs.ReadDir(root, ".")
 	if err != nil {
