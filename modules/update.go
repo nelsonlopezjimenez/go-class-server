@@ -141,7 +141,7 @@ func checkForDependencies(url string) {
 // Issues git clone command to clone websites super project.
 func getWebsitesSuperproject() error {
 	websitesSuper := exec.Command("git", "clone", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-	websitesSuper.Dir = "C:/"
+	websitesSuper.Dir = GetRoot()
 	out, err := websitesSuper.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("Error cloning websites Superproject!!:", err)

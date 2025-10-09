@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 )
@@ -54,7 +55,8 @@ func GetOSPaths() FilePath {
 	case "darwin":
 		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer"}
 	default:
-		return FilePath{"/var/www/websites", "/var/lib/CANVAS_FILE_CACHES", "/var/lib/Videos", "/var/lib/ClassServer"}
+		usr, _ := os.UserHomeDir()
+		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer"}
 	}
 }
 
@@ -87,6 +89,8 @@ func GetRoot() string {
 	case "darwin":
 		return "Users/Shared"
 	default:
-		return "/var/www"
+		usr, _ := os.UserHomeDir()
+
+		return usr
 	}
 }
