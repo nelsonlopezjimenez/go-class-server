@@ -2,9 +2,20 @@ package CIS
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
 )
+
+type FilePath struct {
+	Websites   string
+	CFC        string
+	Videos     string
+	ServerPath string
+}
 
 //go:embed cis
 var build embed.FS
@@ -33,4 +44,53 @@ func GetFileSystemHandler() (http.FileSystem, error) {
 		return nil, err
 	}
 	return http.FS(fsys), nil
+}
+
+// GetOSPaths
+// Returns a struct with the appropriate paths depending on OS
+func GetOSPaths() FilePath {
+	switch runtime.GOOS {
+	case "windows":
+		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer"}
+	case "darwin":
+		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer"}
+	default:
+		usr, _ := os.UserHomeDir()
+		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer"}
+	}
+}
+
+// OpenBrowser opens the server frontend in the OS dependent browser
+func OpenBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		browsers := []string{"xdg-open", "google-chrome", "firefox", "chromium"}
+		for _, browser := range browsers {
+			cmd = exec.Command(browser, url)
+			break
+		}
+	}
+	if cmd == nil {
+		return fmt.Errorf("unable to launch browser")
+	}
+
+	return cmd.Start()
+}
+
+func GetRoot() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "C:/"
+	case "darwin":
+		return "Users/Shared"
+	default:
+		usr, _ := os.UserHomeDir()
+
+		return usr
+	}
 }

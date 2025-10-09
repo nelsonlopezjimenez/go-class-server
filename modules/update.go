@@ -4,7 +4,7 @@ package CIS
 import (
 	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,24 +18,17 @@ type NetworkPinger struct {
 	Timeout int64
 }
 
-var siteRoot = RootDir{"C:/websites"}
+type IPInfo struct {
+	IP          string
+	isConnected bool
+}
+
+var websitesPath = GetOSPaths().Websites
+var siteRoot = RootDir{websitesPath}
 
 // Creates a logger instance specifically for the update functions to inform user of update related events
 var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
-
-// checkForServer
-//
-// This method is an example of a non-exported function. Functions are only exported if their name begins with a capital.
-// Attempts to send a HTTP request to the url string defined the NetworkPinger.Url.
-// If it receives a response, it returns true, otherwise it returns false if an exception is raised.
-func (np NetworkPinger) checkForServer() bool {
-	_, err := http.Get(np.Url)
-	if err != nil {
-		return false
-	} else {
-		return true
-	}
-}
+var ipData IPInfo
 
 // Update
 //
@@ -43,27 +36,28 @@ func (np NetworkPinger) checkForServer() bool {
 // git pull command every np.Timeout minutes to update the monorepo and prints
 // the results of the command to the console.
 func (np NetworkPinger) Update() {
-	if np.checkForServer() {
+	ipData = GetLocalIP()
+	if ipData.isConnected {
 		updateClassResources()
 	}
-	deinitAll()
+
 	interval := time.Minute
 	if gin.Mode() == "debug" {
 		interval = time.Second
 	}
 	checkInterval := time.NewTicker(time.Duration(np.Timeout) * interval)
 	hasCheckedDeps := false
-	if np.checkForServer() {
+	if ipData.isConnected {
 		checkForDependencies(np.Url)
 		updateClassResources()
 		pullWebsitesSuperproject()
 		hasCheckedDeps = true
 	}
 	for range checkInterval.C {
-		isAvailable := np.checkForServer()
-		// websitePull := exec.Command("git", "pull", "--force", "origin", "main")
+		ipData = GetLocalIP()
 
-		if isAvailable {
+		if ipData.isConnected {
+			fmt.Println(time.Now())
 			if hasCheckedDeps {
 				updateClassResources()
 				if gin.Mode() == "release" {
@@ -121,7 +115,7 @@ func checkForDependencies(url string) {
 		}
 
 	}
-	_, websitesErr := os.Stat("C:/websites")
+	_, websitesErr := os.Stat(websitesPath)
 	websitesTicker := time.NewTicker(30 * time.Second)
 	if websitesErr != nil {
 		fmt.Println("No websites folder")
@@ -143,12 +137,11 @@ func checkForDependencies(url string) {
 	}
 }
 
+// getWebsitesSuperproject
+// Issues git clone command to clone websites super project.
 func getWebsitesSuperproject() error {
 	websitesSuper := exec.Command("git", "clone", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-	// Commented out in order to allow recursive update WITHOUT downloading ALL websites...
-	// Ask me how I know...
-	// websitesSubmodules := exec.Command("git", "submodule", "init")
-	websitesSuper.Dir = "C:/"
+	websitesSuper.Dir = GetRoot()
 	out, err := websitesSuper.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("Error cloning websites Superproject!!:", err)
@@ -156,21 +149,15 @@ func getWebsitesSuperproject() error {
 	}
 
 	updateLogger.Println("Cloned websites superproject:", string(out))
-	// websitesSubmodules.Dir = "C:/websites"
-	// subOut, err := websitesSubmodules.CombinedOutput()
-	// if err != nil {
-	// 	updateLogger.Panicln("There was a problem initializing subs!!!:", err)
-	// 	return err
-	// }
-
-	// updateLogger.Println("Submodule out:", string(subOut))
 	return nil
 
 }
 
+// GetWebsiteModule
+// Executes git submodule command to initiate clone of selected submodule
 func GetWebsiteModule(url string) string {
 	updateCmd := exec.Command("git", "submodule", "update", "--init", "--remote", url)
-	updateCmd.Dir = "C:/websites"
+	updateCmd.Dir = websitesPath
 	out, err := updateCmd.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("There was an issue updating submodule", url+":", err)
@@ -180,9 +167,12 @@ func GetWebsiteModule(url string) string {
 	return string(out)
 }
 
+// pullWebsitesSuperproject
+// Issues the git pull command to update the websites superproject
+// and then calls submoduleUpdateAll()
 func pullWebsitesSuperproject() error {
 	websitesPull := exec.Command("git", "pull", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-	websitesPull.Dir = "C:/websites"
+	websitesPull.Dir = websitesPath
 	out, err := websitesPull.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("Error pulling websites Superproject!!:", err)
@@ -196,6 +186,8 @@ func pullWebsitesSuperproject() error {
 
 }
 
+// updateClassResources
+// executes git pull command to get updates to the class resources repo
 func updateClassResources() {
 	gitPull := exec.Command("git", "pull", "--force", "origin", "main")
 	gitPull.Dir = "./data"
@@ -208,6 +200,7 @@ func updateClassResources() {
 }
 
 // updateSubmodule should run for every submodule in the websites folder
+// executes "git submodule update --remote" on supplied repository.
 func updateSubmodule(path string) {
 	subUpdate := exec.Command("git", "submodule", "update", "--remote")
 	subUpdate.Dir = path
@@ -219,6 +212,11 @@ func updateSubmodule(path string) {
 	updateLogger.Println(path+":", string(output))
 }
 
+// submoduleUpdateAll
+// Recursively searches all folders in the websites folder. If it finds an
+// index.html file, it assumes the folder is a submodule of the websites
+// super project and runs updateSubmodule(). Otherwise, it skips the folder
+// without taking any action.
 func submoduleUpdateAll() {
 	allModules := siteRoot.ListBuilder()
 
@@ -230,25 +228,32 @@ func submoduleUpdateAll() {
 	}
 }
 
-// deinitAll will recursively check each submodule for an index file and if found, deinitialze the repo.
-func deinitAll() {
-	allRepos := siteRoot.ListBuilder()
+// GetLocalIP
+// Checks for network interface other than localhost and returns a struct
+// with the ip address and bool value. This allows for checking for network
+// connection without sending get requests to the Gitea server over and over
+func GetLocalIP() IPInfo {
 
-	for _, repo := range allRepos {
-		subs := exec.Command("git", "submodule", "deinit", "--", repo)
-		repoPath := RootDir{siteRoot.Root + "/" + repo}
-		if !repoPath.HasIndex() {
-			updateLogger.Println("finding stuff")
-			subs.Dir = siteRoot.Root
-			out, err := subs.CombinedOutput()
-			if err != nil {
-				updateLogger.Println("Err in deinit:", err)
+	Info := IPInfo{"", false}
+	networkInterfaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Println("[IP Finder]: Could not get interfaces")
+	}
+
+	for _, networkInterface := range networkInterfaces {
+		addrs, err := networkInterface.Addrs()
+		if err != nil {
+			fmt.Println("[IP Finder]: Could not get addresses")
+		}
+
+		for _, addr := range addrs {
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ipnet.IP.To4() != nil {
+					fmt.Println()
+					Info = IPInfo{ipnet.IP.String(), true}
+				}
 			}
-			updateLogger.Println(repo+":", string(out))
-
-			// }
-		} else {
-			updateSubmodule(repoPath.Root)
 		}
 	}
+	return Info
 }
