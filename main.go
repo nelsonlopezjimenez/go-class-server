@@ -26,8 +26,8 @@ var (
 )
 
 var (
-	releaseVersion = "v1.1.4"
-	releaseDate    = "10/8/2025"
+	releaseVersion = "v1.1.5"
+	releaseDate    = "10/9/2025"
 )
 
 var updateIP string
@@ -59,6 +59,7 @@ func main() {
 		updateIP = "http://192.168.1.28:3000"
 		serverLog.Println("The update  URL is:", updateIP)
 	}
+
 	// The server var creates the default gin engine instance
 	server := gin.Default()
 	api := server.Group("/api")
@@ -72,7 +73,7 @@ func main() {
 	_, staticErr := os.Stat(filePath.ServerPath + "/static")
 	if staticErr != nil {
 		if os.IsNotExist(staticErr) {
-			err := os.Mkdir(filePath.ServerPath+"/static/", 0777)
+			err := os.Mkdir(filePath.ServerPath+"/static", 0777)
 			if err != nil {
 				serverLog.Println("Error creating /static:", err)
 			} else {
@@ -124,10 +125,6 @@ func main() {
 		index, err := CIS.GetIndex()
 		if err != nil {
 			serverLog.Panicln(err)
-		}
-		// serverLog.Println("redirect header is:", ctx.Request.Header)
-		if len(ctx.Request.Header.Get("Referer")) > 0 {
-			ctx.Header("redirect", ctx.Request.Header.Get("Referer"))
 		}
 		fmt.Fprintf(ctx.Writer, "%s", index)
 	})
@@ -275,6 +272,9 @@ func main() {
 	}
 
 	// Starts the server on the specified port
-	server.Run(":" + *port)
+	svrErr := server.Run(":" + *port)
+	if svrErr != nil {
+		serverLog.Println("Error in the server:", svrErr)
+	}
 
 }
