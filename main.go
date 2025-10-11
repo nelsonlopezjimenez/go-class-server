@@ -241,8 +241,8 @@ func main() {
 			if !isHidden {
 				var index string
 				currentDir := CIS.RootDir{Root: filePath.Websites + "/" + item}
-				currentDir.FindIndex(func(path, fileName string) {
-					index = path + "/" + fileName
+				currentDir.FindIndex(func(path string, ent fs.DirEntry) {
+					index = path + "/" + ent.Name()
 				})
 				pageUpdated := true
 				isInstalled := false
@@ -262,7 +262,12 @@ func main() {
 	api.GET("/git/update/:submodule", func(ctx *gin.Context) {
 		submodule := ctx.Param("submodule")
 
-		gitOut := CIS.GetWebsiteModule(submodule)
+		gitOut, gitErr := CIS.GetWebsiteModule(submodule)
+			if gitErr != nil {
+				ctx.JSON(500, gitErr.Error())
+				// serverLog.Println("Error Downloading website:", gitErr.Error())
+				return
+			}
 		ctx.JSON(200, gitOut)
 	})
 

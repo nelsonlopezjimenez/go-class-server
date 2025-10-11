@@ -24,7 +24,7 @@ type LinkList struct {
 // This function will recursively search the given dir looking specifically
 // for the first index.html file in its subdirectories and pass any found
 // to a callback for user defined processing.
-func (dir RootDir) FindIndex(cb func(path string, fileName string)) {
+func (dir RootDir) FindIndex(cb func(path string, ent fs.DirEntry)) {
 	root := os.DirFS(dir.Root)
 	rootDir, err := fs.ReadDir(root, ".")
 	if err != nil {
@@ -36,7 +36,7 @@ func (dir RootDir) FindIndex(cb func(path string, fileName string)) {
 		if entry.Type().IsRegular() && entry.Name() == "index.html" {
 			haveIndex = true
 
-			cb(dir.Root, entry.Name())
+			cb(dir.Root, entry)
 		}
 	}
 
@@ -78,9 +78,9 @@ func (dir RootDir) ListBuilder() []string {
 		fmt.Println(err)
 	}
 
-	for i := range list {
-		if list[i].IsDir() {
-			linkList = append(linkList, list[i].Name())
+	for _, ent := range list {
+		if ent.IsDir() {
+			linkList = append(linkList, ent.Name())
 		}
 	}
 
