@@ -27,7 +27,6 @@ type GitError struct {
 	Message string
 	FailedCmd []string
 	ErrorWrapped  error
-	RetryAttempt int
 }
 
 var websitesPath = GetOSPaths().Websites
@@ -140,7 +139,7 @@ func getWebsitesSuperproject() error {
 	out, err := websitesSuper.CombinedOutput()
 	if err != nil {
 		// updateLogger.Println("Error cloning websites Superproject!!:", err)
-		return GitError{"Could not clone the websites superproject. Are you on the dock?", websitesSuper.Args, err, 0}
+		return GitError{"Could not clone the websites superproject. Are you on the dock?", websitesSuper.Args, err}
 	}
 
 	updateLogger.Println("Cloned websites superproject:", string(out))
@@ -156,7 +155,7 @@ func GetWebsiteModule(url string) (string, error) {
 	out, err := updateCmd.CombinedOutput()
 	if err != nil {
 		
-		return "", GitError{"Failed to get " + url + ". Are you connected to the dock?", updateCmd.Args, err, 0}
+		return "", GitError{"Failed to get " + url + ". Are you connected to the dock?", updateCmd.Args, err}
 	}
 
 	return string(out), nil
@@ -170,7 +169,7 @@ func pullWebsitesSuperproject() error {
 	websitesPull.Dir = websitesPath
 	out, err := websitesPull.CombinedOutput()
 	if err != nil {
-		return GitError{"Could not update the superproject", websitesPull.Args, err, 0}
+		return GitError{"Could not update the superproject", websitesPull.Args, err}
 	}
 
 	updateLogger.Println(string(out))
@@ -189,7 +188,7 @@ func updateClassResources() error {
 	_, err := gitPull.CombinedOutput()
 	if err != nil {
 		updateLogger.Println("err:", err)
-		return GitError{"Failed to update lessons. Are you on the dock?", gitPull.Args, err, 0}
+		return GitError{"Failed to update lessons. Are you on the dock?", gitPull.Args, err}
 
 	}
 	return nil
@@ -207,7 +206,6 @@ func updateSubmodule(path string) error {
 			"Failed to update "+path ,
 			subUpdate.Args, 
 			err, 
-			0, 
 		}
 	}
 
@@ -265,30 +263,22 @@ func GetLocalIP() IPInfo {
 }
 
 func (ge GitError) Error() string {
-		isSuccess, err := ge.retry() 
-		if err != nil {
-			updateLogger.Println(err)
-	return ge.Message
-		}
-
-		if isSuccess {
-			return fmt.Sprintf("%s. But finally succeeded after %v tries", ge.Message, ge.RetryAttempt)
-		}
-		return ge.Message
+	retryCommand(ge)
+	return fmt.Sprintf("%s. Are you connected to the dock?", ge.Message)
 }
 
-func (ge GitError) retry() (bool, error) {
-	attempt := ge.RetryAttempt+1
+func retryCommand(ge GitError) {
 	retryCmd := exec.Command(ge.FailedCmd[0], ge.FailedCmd[1:]...)
-	if ge.RetryAttempt < 5 {
-		time.Sleep(time.Duration(10^attempt*2) * time.Millisecond)
-		err := retryCmd.Run()
+	
+	for i := range 5 {
+		time.Sleep(time.Duration(10^i*2) * time.Millisecond)
+
+		out, err := retryCmd.CombinedOutput()
 		if err != nil {
-			return false, GitError{ge.Message, retryCmd.Args, ge.ErrorWrapped, attempt}
-			
-		}
-		return true, nil
+			updateLogger.Printf("Retry %v failed.", i+1)
 		} else {
-		return false, fmt.Errorf("%s. Err: %w", ge.Message, ge.ErrorWrapped)
+			updateLogger.Printf("%s", out)
+			break
+		}
 	}
 }
