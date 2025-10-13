@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -30,7 +31,6 @@ type GitError struct {
 }
 
 var websitesPath = GetOSPaths().Websites
-var siteRoot = RootDir{websitesPath}
 
 // Creates a logger instance specifically for the update functions to inform user of update related events
 var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
@@ -46,6 +46,7 @@ func (np NetworkPinger) Update() {
 	if ipData.isConnected {
 		err := updateClassResources()
 		if err != nil {
+			fmt.Println("I'm an error!")
 			updateLogger.Println(err)
 		}
 	}
@@ -132,6 +133,7 @@ func checkForDependencies(url string) {
 }
 
 // getWebsitesSuperproject
+//
 // Issues git clone command to clone websites super project.
 func getWebsitesSuperproject() error {
 	websitesSuper := exec.Command("git", "clone", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
@@ -148,6 +150,7 @@ func getWebsitesSuperproject() error {
 }
 
 // GetWebsiteModule
+//
 // Executes git submodule command to initiate clone of selected submodule
 func GetWebsiteModule(url string) (string, error) {
 	updateCmd := exec.Command("git", "submodule", "update", "--init", "--remote", url)
@@ -162,6 +165,7 @@ func GetWebsiteModule(url string) (string, error) {
 }
 
 // pullWebsitesSuperproject
+//
 // Issues the git pull command to update the websites superproject
 // and then calls submoduleUpdateAll()
 func pullWebsitesSuperproject() error {
@@ -180,20 +184,23 @@ func pullWebsitesSuperproject() error {
 }
 
 // updateClassResources
+//
 // executes git pull command to get updates to the class resources repo
 func updateClassResources() error {
 	gitPull := exec.Command("git", "pull", "--force", "origin", "main")
 	gitPull.Dir = "./data"
 	updateLogger.Println("Checking for class content")
-	_, err := gitPull.CombinedOutput()
+	err := gitPull.Run()
 	if err != nil {
 		updateLogger.Println("err:", err)
-		return GitError{"Failed to update lessons. Are you on the dock?", gitPull.Args, err}
+		return GitError{"Failed to update lessons.", gitPull.Args, err}
 
 	}
 	return nil
 }
 
+// updateSubmodule
+//
 // updateSubmodule should run for every submodule in the websites folder
 // executes "git submodule update --remote" on supplied repository.
 func updateSubmodule(path string) error {
@@ -214,25 +221,33 @@ func updateSubmodule(path string) error {
 }
 
 // submoduleUpdateAll
-// Recursively searches all folders in the websites folder. If it finds an
-// index.html file, it assumes the folder is a submodule of the websites
-// super project and runs updateSubmodule(). Otherwise, it skips the folder
-// without taking any action.
+// 
+// Runs git submodule status on the websites superproject and
+// finds all statuses beginning with "+". Then this string is
+// split at the spaces to isolate the submodule name that can
+// then be passed to updateSubmodule()
 func submoduleUpdateAll() {
-	allModules := siteRoot.ListBuilder()
+	
+		status := exec.Command("git", "submodule", "status")
+	status.Dir = "C:/websites"
 
-	for _, site := range allModules {
-		sitePath := RootDir{siteRoot.Root + "/" + site}
-		if sitePath.HasIndex() {
-			err := updateSubmodule(sitePath.Root)
-				if err != nil {
-					updateLogger.Println(err)
-				}
-		}
+	out, _ := status.Output()
+
+	findNeedsUpdate, _ := regexp.Compile(`\+.+`)
+	foundNeedsUpdate := findNeedsUpdate.FindAll(out, -1)
+if foundNeedsUpdate != nil {
+	for _, line := range foundNeedsUpdate {
+		submodule := strings.Split(string(line), " ")
+
+		updateSubmodule(submodule[1])
 	}
+} else {
+	updateLogger.Println("All downloaded websites are up to date!")
+}
 }
 
 // GetLocalIP
+//
 // Checks for network interface other than localhost and returns a struct
 // with the ip address and bool value. This allows for checking for network
 // connection without sending get requests to the Gitea server over and over
@@ -268,6 +283,7 @@ func (ge GitError) Error() string {
 }
 
 func retryCommand(ge GitError) {
+	updateLogger.Println("retrying...")
 	retryCmd := exec.Command(ge.FailedCmd[0], ge.FailedCmd[1:]...)
 	
 	for i := range 5 {
@@ -277,7 +293,7 @@ func retryCommand(ge GitError) {
 		if err != nil {
 			updateLogger.Printf("Retry %v failed.", i+1)
 		} else {
-			updateLogger.Printf("%s", out)
+			updateLogger.Printf("%s, err: %v", out, err)
 			break
 		}
 	}
