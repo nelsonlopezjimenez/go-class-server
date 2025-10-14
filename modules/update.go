@@ -25,9 +25,9 @@ type IPInfo struct {
 }
 
 type GitError struct {
-	Message string
-	FailedCmd []string
-	ErrorWrapped  error
+	Message      string
+	FailedCmd    []string
+	ErrorWrapped error
 }
 
 var websitesPath = GetOSPaths().Websites
@@ -59,7 +59,7 @@ func (np NetworkPinger) Update() {
 	hasCheckedDeps := false
 	if ipData.isConnected {
 		checkForDependencies(np.Url)
-		err := updateClassResources() 
+		err := updateClassResources()
 		if err != nil {
 			updateLogger.Println(err)
 		}
@@ -77,7 +77,7 @@ func (np NetworkPinger) Update() {
 			if hasCheckedDeps {
 				err := updateClassResources()
 				if err != nil {
-					 updateLogger.Println(err)
+					updateLogger.Println(err)
 				}
 				if gin.Mode() == "release" {
 					updateLogger.Println("Running pullWebsitesSuperproject()")
@@ -125,7 +125,7 @@ func checkForDependencies(url string) {
 			superErr := getWebsitesSuperproject()
 			if superErr != nil {
 				updateLogger.Println(superErr)
-				
+
 			}
 
 		}
@@ -157,7 +157,7 @@ func GetWebsiteModule(url string) (string, error) {
 	updateCmd.Dir = websitesPath
 	out, err := updateCmd.CombinedOutput()
 	if err != nil {
-		
+
 		return "", GitError{"Failed to get " + url + ". Are you connected to the dock?", updateCmd.Args, err}
 	}
 
@@ -169,7 +169,7 @@ func GetWebsiteModule(url string) (string, error) {
 // Issues the git pull command to update the websites superproject
 // and then calls submoduleUpdateAll()
 func pullWebsitesSuperproject() error {
-	websitesPull := exec.Command("git", "pull", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
+	websitesPull := exec.Command("git", "pull", "--force", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
 	websitesPull.Dir = websitesPath
 	out, err := websitesPull.CombinedOutput()
 	if err != nil {
@@ -210,9 +210,9 @@ func updateSubmodule(path string) error {
 	if err != nil {
 		updateLogger.Println("Error updating website", path+":", err)
 		return GitError{
-			"Failed to update "+path ,
-			subUpdate.Args, 
-			err, 
+			"Failed to update " + path,
+			subUpdate.Args,
+			err,
 		}
 	}
 
@@ -221,29 +221,29 @@ func updateSubmodule(path string) error {
 }
 
 // submoduleUpdateAll
-// 
+//
 // Runs git submodule status on the websites superproject and
 // finds all statuses beginning with "+". Then this string is
 // split at the spaces to isolate the submodule name that can
 // then be passed to updateSubmodule()
 func submoduleUpdateAll() {
-	
-		status := exec.Command("git", "submodule", "status")
+
+	status := exec.Command("git", "submodule", "status")
 	status.Dir = "C:/websites"
 
 	out, _ := status.Output()
 
 	findNeedsUpdate, _ := regexp.Compile(`\+.+`)
 	foundNeedsUpdate := findNeedsUpdate.FindAll(out, -1)
-if foundNeedsUpdate != nil {
-	for _, line := range foundNeedsUpdate {
-		submodule := strings.Split(string(line), " ")
+	if foundNeedsUpdate != nil {
+		for _, line := range foundNeedsUpdate {
+			submodule := strings.Split(string(line), " ")
 
-		updateSubmodule(submodule[1])
+			updateSubmodule(submodule[1])
+		}
+	} else {
+		updateLogger.Println("All downloaded websites are up to date!")
 	}
-} else {
-	updateLogger.Println("All downloaded websites are up to date!")
-}
 }
 
 // GetLocalIP
@@ -285,7 +285,7 @@ func (ge GitError) Error() string {
 func retryCommand(ge GitError) {
 	updateLogger.Println("retrying...")
 	retryCmd := exec.Command(ge.FailedCmd[0], ge.FailedCmd[1:]...)
-	
+
 	for i := range 5 {
 		time.Sleep(time.Duration(10^i*2) * time.Millisecond)
 
