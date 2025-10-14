@@ -7,3 +7,5 @@ data
 modules/cis/*
 CANVAS_FILE_CACHE
 ./build.sh
+modifyHTML.sh
+build.sh
