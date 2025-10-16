@@ -7,6 +7,7 @@ package main
 // Every package that is declared in the imports must be used
 import (
 	// "bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -225,7 +226,25 @@ func main() {
 
 		// Remember: the property names must be UPPERCASE in order to be exported
 		// Type Outbound defines what the structure should contain.
+		type MetaData struct {
+			Size int
+			Description string
 
+		}
+		data := map[string]MetaData{}
+		websiteMetaData, err := os.Open(filePath.Websites + "/index.json")
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer websiteMetaData.Close()
+		// repo data can be pulled from this api
+// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
+
+		err = json.NewDecoder(websiteMetaData).Decode(&data)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("Stuf!!:", data)
 		newList := CIS.RootDir{Root: filePath.Websites}
 		newListTest := newList.ListBuilder()
 		type testStruct struct {
@@ -233,10 +252,10 @@ func main() {
 			IndexPath string
 			Installed bool
 			IsCurrent bool
+			Meta MetaData
 		}
 		structSlice := []testStruct{}
 		for _, item := range newListTest {
-
 			isHidden := strings.HasPrefix(item, ".")
 			if !isHidden {
 				var index string
@@ -249,7 +268,7 @@ func main() {
 				if index != "" {
 					isInstalled = true
 				}
-				indexStruct := testStruct{item, index, isInstalled, pageUpdated}
+				indexStruct := testStruct{item, index, isInstalled, pageUpdated, data[item]}
 				structSlice = append(structSlice, indexStruct)
 			}
 		}
