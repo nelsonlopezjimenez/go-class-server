@@ -4,9 +4,13 @@ package CIS
 import (
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"regexp"
 	"strings"
+	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type RootDir struct {
@@ -17,6 +21,23 @@ type LinkList struct {
 	Title []string
 	Path  []string
 }
+
+	type Meta struct {
+	Week int
+	Title string
+	Description string
+}
+
+type LessonInfo struct {
+	Week int	`json:"week"`
+	Title string	`json:"title"`
+	Description string	`json:"description"`
+	CreatedAt time.Time `json:"created_at"`
+	FileSize int64 `json:"file_size"`
+	Section string `json:"section"`
+	Content string `json:"content"`
+}
+
 
 // Changed name from Recursive to FindIndex in order to better explain
 // the fn's purpose.
@@ -125,4 +146,48 @@ func findFileExt(name string, ext string) bool {
 
 	return re.MatchString(name)
 
+}
+
+// MakeLessonInfo
+//
+// Creates and returns a struct with the data for the specified markdown file.
+// It takes MD files with front matter and parses it into a go struct that can
+// then be used as needed.
+func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) LessonInfo {
+		var lesson LessonInfo
+		var metaData Meta
+		
+		// creates a fs.FS  for the information directory
+		fsys := os.DirFS("./data/markdown/lessons/" + dir)
+		// Opens the requested markdown file
+		file, err := fs.ReadFile(fsys, lessonFile)
+		if err != nil {
+			serverLog.Panicln("There was an error getting the requested file:", err)
+		}
+
+		fileInfo, err := os.Stat("./data/markdown/lessons/" + dir + "/" + lessonFile)
+			if err != nil {
+				serverLog.Println(err)
+			} else {
+				lesson.CreatedAt = fileInfo.ModTime()
+				lesson.FileSize = fileInfo.Size()
+				lesson.Section = dir
+			}
+
+			contentStr := string(file)
+
+	if strings.HasPrefix(contentStr, "---") {
+		contentSlice := strings.SplitN(contentStr, "---", 3)
+		 err = yaml.Unmarshal([]byte(contentSlice[1]), &metaData)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			lesson.Title = metaData.Title
+			lesson.Week = metaData.Week
+			lesson.Description = metaData.Description
+			lesson.Content = strings.TrimSpace(contentSlice[2])
+		}
+		fmt.Println(contentSlice[1])
+	}
+	return lesson
 }
