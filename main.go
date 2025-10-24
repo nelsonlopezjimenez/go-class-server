@@ -91,7 +91,9 @@ func main() {
 		}
 	}
 
-	server.Static("/static", filePath.ServerPath+"/static")
+	// server.Static("/static", filePath.ServerPath+"/static/")
+	server.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
+	
 
 	Gitea := CIS.NetworkPinger{Url: updateIP, Timeout: 10}
 	// Goroutine to check for lesson repo and updates if there is a connection

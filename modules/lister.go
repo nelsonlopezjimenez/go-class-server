@@ -38,7 +38,7 @@ type LessonInfo struct {
 	Content string `json:"content"`
 }
 
-
+// FindIndex
 // Changed name from Recursive to FindIndex in order to better explain
 // the fn's purpose.
 //
@@ -152,7 +152,7 @@ func findFileExt(name string, ext string) bool {
 //
 // Creates and returns a struct with the data for the specified markdown file.
 // It takes MD files with front matter and parses it into a go struct that can
-// then be used as needed.
+// then be used as needed. The struct is typically sent to the client at a json obj.
 func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) LessonInfo {
 		var lesson LessonInfo
 		var metaData Meta
@@ -160,13 +160,17 @@ func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) Lesson
 		// creates a fs.FS  for the information directory
 		fsys := os.DirFS("./data/markdown/lessons/" + dir)
 		// Opens the requested markdown file
+		// TODO: Should be after os.Stat
 		file, err := fs.ReadFile(fsys, lessonFile)
 		if err != nil {
 			serverLog.Panicln("There was an error getting the requested file:", err)
 		}
 
+		// Checks to make sure the file exists. If it does, it populates the CreatedAt, FileSize,
+		// and Section fields.
 		fileInfo, err := os.Stat("./data/markdown/lessons/" + dir + "/" + lessonFile)
 			if err != nil {
+				// TODO: Needs to return err and have err handling rather than just swallowing.
 				serverLog.Println(err)
 			} else {
 				lesson.CreatedAt = fileInfo.ModTime()
@@ -174,12 +178,16 @@ func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) Lesson
 				lesson.Section = dir
 			}
 
+			// Converts the returned []byte into a string for manipulation
 			contentStr := string(file)
 
+			// Looks for the front matter fences and parses out the keys inside
+			// the fence as yaml and adds them to the LessonInfo struct
 	if strings.HasPrefix(contentStr, "---") {
 		contentSlice := strings.SplitN(contentStr, "---", 3)
 		 err = yaml.Unmarshal([]byte(contentSlice[1]), &metaData)
 		if err != nil {
+			// TODO: Handle the error better 
 			fmt.Println(err)
 		} else {
 			lesson.Title = metaData.Title
@@ -187,7 +195,7 @@ func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) Lesson
 			lesson.Description = metaData.Description
 			lesson.Content = strings.TrimSpace(contentSlice[2])
 		}
-		fmt.Println(contentSlice[1])
 	}
+	// Return the struct ready for use elsewhere.
 	return lesson
 }
