@@ -3,6 +3,7 @@ package CIS
 
 import (
 	"fmt"
+	command "localhost/CIS/modules/cmd"
 	"log"
 	"net"
 	"os"
@@ -99,6 +100,7 @@ func (np NetworkPinger) Update() {
 // Checks if directory named 'data' exists. If it does not, it runs the git clone
 // command to clone the monorepo from Gitea.
 func checkForDependencies(url string) {
+	checkUserConfig()
 	cwd, err := os.Getwd()
 	if err != nil {
 		updateLogger.Panicln("Cannot get CWD:", err)
@@ -295,6 +297,18 @@ func retryCommand(ge GitError) {
 		} else {
 			updateLogger.Printf("%s, err: %v", out, err)
 			break
+		}
+	}
+}
+
+func checkUserConfig() {
+	userName := os.Getenv("USERNAME")
+	for Key, Value := range map[string]string{
+		"user.name":  userName,
+		"user.email": fmt.Sprintf("%s@edcc.edu", userName),
+	} {
+		err := command.CheckConfigKeyIsSet(Key, Value); if err != nil {
+			fmt.Println("[cUC]:", err)
 		}
 	}
 }
