@@ -7,6 +7,7 @@ package main
 // Every package that is declared in the imports must be used
 import (
 	// "bytes"
+
 	"flag"
 	"fmt"
 	"io/fs"
@@ -29,6 +30,7 @@ var (
 	releaseVersion = "v1.3.0"
 	releaseDate    = "10/23/2025"
 )
+
 
 var updateIP string
 
@@ -89,7 +91,9 @@ func main() {
 		}
 	}
 
-	server.Static("/static", filePath.ServerPath+"/static")
+	// server.Static("/static", filePath.ServerPath+"/static/")
+	server.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
+	
 
 	Gitea := CIS.NetworkPinger{Url: updateIP, Timeout: 10}
 	// Goroutine to check for lesson repo and updates if there is a connection
@@ -221,21 +225,55 @@ func main() {
 		ctx.JSON(200, testSlice)
 	})
 
+	api.GET("/data/:subdir/:lesson", func(ctx *gin.Context) {
+		subdir := ctx.Param("subdir")
+		lessonName := ctx.Param("lesson")
+		
+
+		lesson := CIS.MakeLessonInfo(subdir, lessonName+".md", serverLog)
+	ctx.JSON(200, lesson)
+
+	})
+
+	api.GET("/data/lessons", func(ctx *gin.Context) {
+		lessons := []CIS.LessonInfo{}
+
+		lessonList := CIS.RootDir{Root: "./data/markdown/lessons"}
+
+		infoSlice := map[string][]string{}
+
+		// fmt.Println(testSlice)
+		lessonList.RecursiveSearch(".md", func(path string, fileName string) {
+
+			infoSlice[path] = append(infoSlice[path], fileName)
+		})
+
+		for subdir, lessonSubdir := range infoSlice {
+			// fmt.Println(lessonSubdir)
+			for _, lessonMD := range lessonSubdir {
+				lesson := CIS.MakeLessonInfo(subdir, lessonMD, serverLog)
+	lessons = append(lessons, lesson)
+			}
+			ctx.JSON(200, lessons)
+		}
+
+	})
+
 	api.GET("/links", func(ctx *gin.Context) {
 
 		// Remember: the property names must be UPPERCASE in order to be exported
 		// Type Outbound defines what the structure should contain.
 
-		newList := CIS.RootDir{Root: filePath.Websites}
-		newListTest := newList.ListBuilder()
-		type testStruct struct {
+		websites := CIS.RootDir{Root: filePath.Websites}
+		websitesList := websites.ListBuilder()
+		type WebsiteInfo struct {
 			Domain    string
 			IndexPath string
 			Installed bool
 			IsCurrent bool
 		}
-		structSlice := []testStruct{}
-		for _, item := range newListTest {
+		websiteInfoSlice := []WebsiteInfo{}
+		for _, item := range websitesList {
 
 			isHidden := strings.HasPrefix(item, ".")
 			if !isHidden {
@@ -249,13 +287,13 @@ func main() {
 				if index != "" {
 					isInstalled = true
 				}
-				indexStruct := testStruct{item, index, isInstalled, pageUpdated}
-				structSlice = append(structSlice, indexStruct)
+				indexStruct := WebsiteInfo{item, index, isInstalled, pageUpdated}
+				websiteInfoSlice = append(websiteInfoSlice, indexStruct)
 			}
 		}
 
 		// Sends response  json data to the client
-		ctx.JSON(200, structSlice)
+		ctx.JSON(200, websiteInfoSlice)
 
 	})
 

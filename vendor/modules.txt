@@ -268,7 +268,7 @@ google.golang.org/protobuf/proto
 google.golang.org/protobuf/reflect/protoreflect
 google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
-# gopkg.in/yaml.v3 v3.0.1
+# gopkg.in/yaml.v3 v3.0.1 => ../modules-from-go-home/gopkg.in/yaml.v3@v3.0.1
 ## explicit
 gopkg.in/yaml.v3
 # github.com/gin-gonic/gin => ../modules/gin-master/
