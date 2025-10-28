@@ -27,7 +27,7 @@ var (
 )
 
 var (
-	releaseVersion = "v1.3.1"
+	releaseVersion = "v1.3.2"
 	releaseDate    = "10/28/2025"
 )
 
