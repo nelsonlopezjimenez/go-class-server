@@ -27,8 +27,8 @@ var (
 )
 
 var (
-	releaseVersion = "v1.1.7"
-	releaseDate    = "10/14/2025"
+	releaseVersion = "v1.3.2"
+	releaseDate    = "10/28/2025"
 )
 
 var updateIP string
@@ -90,7 +90,8 @@ func main() {
 		}
 	}
 
-	server.Static("/static", filePath.ServerPath+"/static")
+	// server.Static("/static", filePath.ServerPath+"/static/")
+	server.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
 
 	Gitea := CIS.NetworkPinger{Url: updateIP, Timeout: 10}
 	// Goroutine to check for lesson repo and updates if there is a connection
@@ -222,14 +223,46 @@ func main() {
 		ctx.JSON(200, testSlice)
 	})
 
+	api.GET("/data/:subdir/:lesson", func(ctx *gin.Context) {
+		subdir := ctx.Param("subdir")
+		lessonName := ctx.Param("lesson")
+
+		lesson := CIS.MakeLessonInfo(subdir, lessonName+".md", serverLog)
+		ctx.JSON(200, lesson)
+
+	})
+
+	api.GET("/data/lessons", func(ctx *gin.Context) {
+		lessons := []CIS.LessonInfo{}
+
+		lessonList := CIS.RootDir{Root: "./data/markdown/lessons"}
+
+		infoSlice := map[string][]string{}
+
+		// fmt.Println(testSlice)
+		lessonList.RecursiveSearch(".md", func(path string, fileName string) {
+
+			infoSlice[path] = append(infoSlice[path], fileName)
+		})
+
+		for subdir, lessonSubdir := range infoSlice {
+			// fmt.Println(lessonSubdir)
+			for _, lessonMD := range lessonSubdir {
+				lesson := CIS.MakeLessonInfo(subdir, lessonMD, serverLog)
+				lessons = append(lessons, lesson)
+			}
+			ctx.JSON(200, lessons)
+		}
+
+	})
+
 	api.GET("/links", func(ctx *gin.Context) {
 
 		// Remember: the property names must be UPPERCASE in order to be exported
 		// Type Outbound defines what the structure should contain.
 		type MetaData struct {
-			Size int
+			Size        int
 			Description string
-
 		}
 		data := map[string]MetaData{}
 		websiteMetaData, err := os.Open(filePath.Websites + "/index.json")
@@ -238,24 +271,25 @@ func main() {
 		}
 		defer websiteMetaData.Close()
 		// repo data can be pulled from this api
-// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
+		// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
 
 		err = json.NewDecoder(websiteMetaData).Decode(&data)
 		if err != nil {
 			fmt.Println(err)
 		}
 		fmt.Println("Stuf!!:", data)
-		newList := CIS.RootDir{Root: filePath.Websites}
-		newListTest := newList.ListBuilder()
-		type testStruct struct {
+		websites := CIS.RootDir{Root: filePath.Websites}
+		websitesList := websites.ListBuilder()
+		type WebsiteInfo struct {
 			Domain    string
 			IndexPath string
 			Installed bool
 			IsCurrent bool
-			Meta MetaData
+			Meta      MetaData
 		}
-		structSlice := []testStruct{}
-		for _, item := range newListTest {
+		websiteInfoSlice := []WebsiteInfo{}
+		for _, item := range websitesList {
+
 			isHidden := strings.HasPrefix(item, ".")
 			if !isHidden {
 				var index string
@@ -268,13 +302,13 @@ func main() {
 				if index != "" {
 					isInstalled = true
 				}
-				indexStruct := testStruct{item, index, isInstalled, pageUpdated, data[item]}
-				structSlice = append(structSlice, indexStruct)
+				indexStruct := WebsiteInfo{item, index, isInstalled, pageUpdated}
+				websiteInfoSlice = append(websiteInfoSlice, indexStruct)
 			}
 		}
 
 		// Sends response  json data to the client
-		ctx.JSON(200, structSlice)
+		ctx.JSON(200, websiteInfoSlice)
 
 	})
 
@@ -282,11 +316,11 @@ func main() {
 		submodule := ctx.Param("submodule")
 
 		gitOut, gitErr := CIS.GetWebsiteModule(submodule)
-			if gitErr != nil {
-				ctx.JSON(500, gitErr.Error())
-				// serverLog.Println("Error Downloading website:", gitErr.Error())
-				return
-			}
+		if gitErr != nil {
+			ctx.JSON(500, gitErr.Error())
+			// serverLog.Println("Error Downloading website:", gitErr.Error())
+			return
+		}
 		ctx.JSON(200, gitOut)
 	})
 
