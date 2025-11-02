@@ -33,12 +33,13 @@ func (e CmdError) StdErr() string {
 // MakeGitCmd
 //
 // Takes supplied args and creates a Command to run a git cmd
-func MakeGitCmd(args ...string) *Command {
+func MakeGitCmd(dir string, args ...string) *Command {
 	c := &Command{} 
 	
 	c.Prog = "git"
 	c.Args = args 
 	c.Cmd = exec.Command(c.Prog, c.Args...)
+	c.Cmd.Dir = dir
 	return c
 }
 

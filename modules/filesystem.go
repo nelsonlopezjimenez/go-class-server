@@ -94,3 +94,10 @@ func GetRoot() string {
 		return usr
 	}
 }
+
+func  DeleteSite(dir string) error {
+	err := os.RemoveAll(dir);  if err != nil {
+		return err
+	}
+	return nil
+}

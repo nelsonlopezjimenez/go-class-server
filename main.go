@@ -7,7 +7,6 @@ package main
 // Every package that is declared in the imports must be used
 import (
 	// "bytes"
-
 	"flag"
 	"fmt"
 	"io/fs"
@@ -16,6 +15,7 @@ import (
 	"strings"
 
 	CIS "localhost/CIS/modules"
+	"localhost/CIS/modules/external"
 
 	"github.com/gin-gonic/gin"
 )
@@ -260,10 +260,17 @@ func main() {
 	})
 
 	api.GET("/links", func(ctx *gin.Context) {
-
+		err := external.UpdateSiteMetaData(); if err != nil {
+			serverLog.Println(err)
+		}
 		// Remember: the property names must be UPPERCASE in order to be exported
-		// Type Outbound defines what the structure should contain.
+		websiteMetaData, err := external.GetSiteMetaData(); if err != nil {
+			serverLog.Println(err)
+		}
+		// repo data can be pulled from this api
+// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
 
+		
 		websites := CIS.RootDir{Root: filePath.Websites}
 		websitesList := websites.ListBuilder()
 		type WebsiteInfo struct {
@@ -271,9 +278,18 @@ func main() {
 			IndexPath string
 			Installed bool
 			IsCurrent bool
+			Meta external.Info
 		}
 		websiteInfoSlice := []WebsiteInfo{}
 		for _, item := range websitesList {
+			metaInfo := external.Info{}
+			for _, metadata := range websiteMetaData {
+				if item == metadata.Name {
+					metaInfo = metadata.Meta
+				} else {
+					metaInfo = external.Info{Size: 10, Topics: []string{}, Description: "Description not available"}
+				}
+			}
 
 			isHidden := strings.HasPrefix(item, ".")
 			if !isHidden {
@@ -287,7 +303,7 @@ func main() {
 				if index != "" {
 					isInstalled = true
 				}
-				indexStruct := WebsiteInfo{item, index, isInstalled, pageUpdated}
+				indexStruct := WebsiteInfo{item, index, isInstalled, pageUpdated, metaInfo}
 				websiteInfoSlice = append(websiteInfoSlice, indexStruct)
 			}
 		}
@@ -297,16 +313,38 @@ func main() {
 
 	})
 
-	api.GET("/git/update/:submodule", func(ctx *gin.Context) {
+	api.GET("/git/:command/:submodule", func(ctx *gin.Context) {
 		submodule := ctx.Param("submodule")
+		command := ctx.Param("command")
+		serverLog.Println(command)
+		switch command {
+		case "update":
+		err := CIS.GitPull(filePath.Websites+"/"+submodule); if err != nil {
+			ctx.JSON(500, err.Error())
+			return
+		}
+		case "install":
+			err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/", submodule); if err != nil {
+		fmt.Println("[main]",err)
 
-		gitOut, gitErr := CIS.GetWebsiteModule(submodule)
-			if gitErr != nil {
-				ctx.JSON(500, gitErr.Error())
-				// serverLog.Println("Error Downloading website:", gitErr.Error())
-				return
-			}
-		ctx.JSON(200, gitOut)
+			ctx.JSON(500, err.Error())
+			return
+		}
+		case "delete":
+			// delete specified domain dir
+			CIS.DeleteSite(filePath.Websites+"/"+submodule)
+		default:
+			ctx.Status(403)
+			return
+		}
+
+		// gitOut, gitErr := CIS.GetWebsiteModule(submodule)
+		// 	if gitErr != nil {
+		// 		ctx.JSON(500, gitErr.Error())
+		// 		// serverLog.Println("Error Downloading website:", gitErr.Error())
+		// 		return
+		// 	}
+		ctx.Status(200)
 	})
 
 	if !isDev {
@@ -321,3 +359,4 @@ func main() {
 	}
 
 }
+		
