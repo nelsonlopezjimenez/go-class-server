@@ -1,0 +1,16 @@
+
+### Check number of items from websites gitea - copied from GITEA swagger api
+curl -X 'GET' \
+  'http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=500' \
+  -H 'accept: application/js
+
+
+### Check number of items from websites gitea - copied from postman
+
+GET /api/v1/repos/search?uid=6&limit=200 HTTP/1.1
+Host: 192.168.1.47:3000
+
+### Check sites returned from class server
+
+GET /api/links HTTP/1.1
+Host: localhost:22022
