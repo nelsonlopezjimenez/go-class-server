@@ -284,6 +284,7 @@ func main() {
 			for _, metadata := range websiteMetaData {
 				if item == metadata.Name {
 					metaInfo = metadata.Meta
+					break
 				} else {
 					metaInfo = external.Info{Size: 10, Topics: []string{}, Description: "Description not available"}
 				}
