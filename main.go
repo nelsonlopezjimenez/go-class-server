@@ -27,8 +27,8 @@ var (
 )
 
 var (
-	releaseVersion = "v1.3.2"
-	releaseDate    = "10/28/2025"
+	releaseVersion = "v1.4.0"
+	releaseDate    = "10/30/2025"
 )
 
 var updateIP string
