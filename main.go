@@ -31,7 +31,6 @@ var (
 	releaseDate    = "10/28/2025"
 )
 
-
 var updateIP string
 
 var filePath = CIS.GetOSPaths()
@@ -93,7 +92,6 @@ func main() {
 
 	// server.Static("/static", filePath.ServerPath+"/static/")
 	server.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
-	
 
 	Gitea := CIS.NetworkPinger{Url: updateIP, Timeout: 10}
 	// Goroutine to check for lesson repo and updates if there is a connection
@@ -228,10 +226,9 @@ func main() {
 	api.GET("/data/:subdir/:lesson", func(ctx *gin.Context) {
 		subdir := ctx.Param("subdir")
 		lessonName := ctx.Param("lesson")
-		
 
 		lesson := CIS.MakeLessonInfo(subdir, lessonName+".md", serverLog)
-	ctx.JSON(200, lesson)
+		ctx.JSON(200, lesson)
 
 	})
 
@@ -252,7 +249,7 @@ func main() {
 			// fmt.Println(lessonSubdir)
 			for _, lessonMD := range lessonSubdir {
 				lesson := CIS.MakeLessonInfo(subdir, lessonMD, serverLog)
-	lessons = append(lessons, lesson)
+				lessons = append(lessons, lesson)
 			}
 			ctx.JSON(200, lessons)
 		}
@@ -260,17 +257,18 @@ func main() {
 	})
 
 	api.GET("/links", func(ctx *gin.Context) {
-		err := external.UpdateSiteMetaData(); if err != nil {
+		err := external.UpdateSiteMetaData()
+		if err != nil {
 			serverLog.Println(err)
 		}
 		// Remember: the property names must be UPPERCASE in order to be exported
-		websiteMetaData, err := external.GetSiteMetaData(); if err != nil {
+		websiteMetaData, err := external.GetSiteMetaData()
+		if err != nil {
 			serverLog.Println(err)
 		}
 		// repo data can be pulled from this api
-// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
+		// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
 
-		
 		websites := CIS.RootDir{Root: filePath.Websites}
 		websitesList := websites.ListBuilder()
 		type WebsiteInfo struct {
@@ -278,7 +276,7 @@ func main() {
 			IndexPath string
 			Installed bool
 			IsCurrent bool
-			Meta external.Info
+			Meta      external.Info
 		}
 		websiteInfoSlice := []WebsiteInfo{}
 		for _, item := range websitesList {
@@ -319,20 +317,22 @@ func main() {
 		serverLog.Println(command)
 		switch command {
 		case "update":
-		err := CIS.GitPull(filePath.Websites+"/"+submodule); if err != nil {
-			ctx.JSON(500, err.Error())
-			return
-		}
+			err := CIS.GitPull(filePath.Websites + "/" + submodule)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
 		case "install":
-			err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/", submodule); if err != nil {
-		fmt.Println("[main]",err)
+			err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/", submodule)
+			if err != nil {
+				fmt.Println("[main]", err)
 
-			ctx.JSON(500, err.Error())
-			return
-		}
+				ctx.JSON(500, err.Error())
+				return
+			}
 		case "delete":
 			// delete specified domain dir
-			CIS.DeleteSite(filePath.Websites+"/"+submodule)
+			CIS.DeleteSite(filePath.Websites + "/" + submodule)
 		default:
 			ctx.Status(403)
 			return
@@ -359,4 +359,3 @@ func main() {
 	}
 
 }
-		
