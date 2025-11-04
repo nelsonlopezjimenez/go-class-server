@@ -27,8 +27,8 @@ var (
 )
 
 var (
-	releaseVersion = "v1.3.2"
-	releaseDate    = "10/28/2025"
+	releaseVersion = "v1.4.0"
+	releaseDate    = "10/30/2025"
 )
 
 var updateIP string
@@ -63,6 +63,21 @@ func main() {
 
 	// The server var creates the default gin engine instance
 	server := gin.Default()
+
+	// This middleware function prevents the access of the students' server
+	// to anyone on the outside network. This prevents the possibility of data
+	// transfer from system to system as prohibited by DOC.
+	// Note: This can only be controlled via the source code. After compile,
+	// This cannot be circumvented from the executable itself.
+	server.Use(func(ctx *gin.Context) {
+		switch ctx.RemoteIP() {
+		case "::1", "127.0.0.1":
+			fmt.Println("Permitted")
+		default:
+			ctx.String(403, "I'm sorry. Your are not authorized to see this.")
+			ctx.Abort()
+		}
+	})
 	api := server.Group("/api")
 	// The following line defines a static asset folder
 	fsys, err := CIS.GetFileSystemHandler()
