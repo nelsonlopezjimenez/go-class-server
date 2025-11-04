@@ -257,55 +257,54 @@ func main() {
 	})
 
 	api.GET("/links", func(ctx *gin.Context) {
-		err := external.UpdateSiteMetaData()
-		if err != nil {
-			serverLog.Println(err)
-		}
+		// err := external.UpdateSiteMetaData()
+		// if err != nil {
+		// 	serverLog.Println(err)
+		// }
 		// Remember: the property names must be UPPERCASE in order to be exported
-		websiteMetaData, err := external.GetSiteMetaData()
+		websiteInfoSlice, err := external.SendSiteList()
 		if err != nil {
-			serverLog.Println(err)
+			ctx.String(500, err.Error())
+			return
 		}
+		// GetSiteMetaData()
+		// if err != nil {
+		// 	serverLog.Println(err)
+		// }
 		// repo data can be pulled from this api
 		// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
 
-		websites := CIS.RootDir{Root: filePath.Websites}
-		websitesList := websites.ListBuilder()
-		type WebsiteInfo struct {
-			Domain    string
-			IndexPath string
-			Installed bool
-			IsCurrent bool
-			Meta      external.Info
-		}
-		websiteInfoSlice := []WebsiteInfo{}
-		for _, item := range websitesList {
-			metaInfo := external.Info{}
-			for _, metadata := range websiteMetaData {
-				if item == metadata.Name {
-					metaInfo = metadata.Meta
-					break
-				} else {
-					metaInfo = external.Info{Size: 10, Topics: []string{}, Description: "Description not available"}
-				}
-			}
+		// websites := CIS.RootDir{Root: filePath.Websites}
+		// websitesList := websites.ListBuilder()
+		// type WebsiteInfo struct {
+		// 	Domain    string
+		// 	IndexPath string
+		// 	Installed bool
+		// 	IsCurrent bool
+		// 	Meta      external.Info
+		// }
+		// websiteInfoSlice := []WebsiteInfo{}
+		// // for _, item := range websitesList {
+		// // metaInfo := external.Info{}
+		// for _, website := range websiteMetaData {
+		// 	singlePage := WebsiteInfo{}
+		// 	singlePage.Installed = false
+		// 	singlePage.IsCurrent = false
+		// 	websiteFileInfo, err := os.Stat(filePath.Websites + "/" + website.Name)
+		// 	if err == nil {
+		// 		singlePage.Installed = true
+		// 		if websiteFileInfo.ModTime() == website.Meta.Updated_At {
+		// 			singlePage.IsCurrent = true
+		// 		}
+		// 	}
+		// 	singlePage.Domain = website.Name
+		// 	singlePage.Meta = website.Meta
 
-			isHidden := strings.HasPrefix(item, ".")
-			if !isHidden {
-				var index string
-				currentDir := CIS.RootDir{Root: filePath.Websites + "/" + item}
-				currentDir.FindIndex(func(path string, ent fs.DirEntry) {
-					index = path + "/" + ent.Name()
-				})
-				pageUpdated := true
-				isInstalled := false
-				if index != "" {
-					isInstalled = true
-				}
-				indexStruct := WebsiteInfo{item, index, isInstalled, pageUpdated, metaInfo}
-				websiteInfoSlice = append(websiteInfoSlice, indexStruct)
-			}
-		}
+		// 	websiteInfoSlice = append(websiteInfoSlice, singlePage)
+
+		// }
+
+		// }
 
 		// Sends response  json data to the client
 		ctx.JSON(200, websiteInfoSlice)
