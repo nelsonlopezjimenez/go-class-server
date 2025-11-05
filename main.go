@@ -72,7 +72,7 @@ func main() {
 	server.Use(func(ctx *gin.Context) {
 		switch ctx.RemoteIP() {
 		case "::1", "127.0.0.1":
-			fmt.Println("Permitted")
+			ctx.Next()
 		default:
 			ctx.String(403, "I'm sorry. Your are not authorized to see this.")
 			ctx.Abort()
@@ -229,12 +229,10 @@ func main() {
 
 		testSlice := map[string][]string{}
 
-		// fmt.Println(testSlice)
 		testList.RecursiveSearch(".md", func(path string, fileName string) {
 
 			testSlice[path] = append(testSlice[path], fileName)
 		})
-		// fmt.Println(testSlice)
 		ctx.JSON(200, testSlice)
 	})
 
@@ -254,14 +252,12 @@ func main() {
 
 		infoSlice := map[string][]string{}
 
-		// fmt.Println(testSlice)
 		lessonList.RecursiveSearch(".md", func(path string, fileName string) {
 
 			infoSlice[path] = append(infoSlice[path], fileName)
 		})
 
 		for subdir, lessonSubdir := range infoSlice {
-			// fmt.Println(lessonSubdir)
 			for _, lessonMD := range lessonSubdir {
 				lesson := CIS.MakeLessonInfo(subdir, lessonMD, serverLog)
 				lessons = append(lessons, lesson)
@@ -272,54 +268,11 @@ func main() {
 	})
 
 	api.GET("/links", func(ctx *gin.Context) {
-		// err := external.UpdateSiteMetaData()
-		// if err != nil {
-		// 	serverLog.Println(err)
-		// }
-		// Remember: the property names must be UPPERCASE in order to be exported
 		websiteInfoSlice, err := external.SendSiteList()
 		if err != nil {
 			ctx.String(500, err.Error())
 			return
 		}
-		// GetSiteMetaData()
-		// if err != nil {
-		// 	serverLog.Println(err)
-		// }
-		// repo data can be pulled from this api
-		// http://192.168.1.47:3000/api/v1/repos/OfflineWebsites/w3schools.com
-
-		// websites := CIS.RootDir{Root: filePath.Websites}
-		// websitesList := websites.ListBuilder()
-		// type WebsiteInfo struct {
-		// 	Domain    string
-		// 	IndexPath string
-		// 	Installed bool
-		// 	IsCurrent bool
-		// 	Meta      external.Info
-		// }
-		// websiteInfoSlice := []WebsiteInfo{}
-		// // for _, item := range websitesList {
-		// // metaInfo := external.Info{}
-		// for _, website := range websiteMetaData {
-		// 	singlePage := WebsiteInfo{}
-		// 	singlePage.Installed = false
-		// 	singlePage.IsCurrent = false
-		// 	websiteFileInfo, err := os.Stat(filePath.Websites + "/" + website.Name)
-		// 	if err == nil {
-		// 		singlePage.Installed = true
-		// 		if websiteFileInfo.ModTime() == website.Meta.Updated_At {
-		// 			singlePage.IsCurrent = true
-		// 		}
-		// 	}
-		// 	singlePage.Domain = website.Name
-		// 	singlePage.Meta = website.Meta
-
-		// 	websiteInfoSlice = append(websiteInfoSlice, singlePage)
-
-		// }
-
-		// }
 
 		// Sends response  json data to the client
 		ctx.JSON(200, websiteInfoSlice)
@@ -338,7 +291,7 @@ func main() {
 				return
 			}
 		case "install":
-			err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/", submodule)
+			err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/"+submodule+".git", submodule)
 			if err != nil {
 				fmt.Println("[main]", err)
 

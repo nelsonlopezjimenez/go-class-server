@@ -63,10 +63,6 @@ func (np NetworkPinger) Update() {
 		if err != nil {
 			updateLogger.Println(err)
 		}
-		// err = pullWebsitesSuperproject()
-		// if err != nil {
-		// 	updateLogger.Println(err)
-		// }
 		hasCheckedDeps = true
 	}
 	for range checkInterval.C {
@@ -79,14 +75,6 @@ func (np NetworkPinger) Update() {
 				if err != nil {
 					updateLogger.Println(err)
 				}
-				// if gin.Mode() == "release" {
-				// 	updateLogger.Println("Running pullWebsitesSuperproject()")
-				// 	siteErr := pullWebsitesSuperproject()
-				// 	if siteErr != nil {
-				// 		updateLogger.Println(siteErr)
-				// 	}
-				// }
-
 			}
 		}
 
@@ -108,15 +96,8 @@ func checkForDependencies(url string) {
 	_, dirErr := os.Stat(cwd + "/data")
 	if dirErr != nil {
 		if os.IsNotExist(dirErr) {
-			// Gitea := exec.Command("git", "clone", "-b", "main", url+"/ClassroomResources/ClassServerResources.git", "./data")
-			// updateLogger.Println("data directory does not Exist.")
-			// updateLogger.Println("Creating it now.")
-			// updateLogger.Println("Attempting to clone data")
-			// _, cloneErr := Gitea.CombinedOutput()
-			// if cloneErr != nil {
-			// 	updateLogger.Println(cloneErr)
-			// }
-			err := GitClone(".",  url+"/ClassroomResources/ClassServerResources.git", "./data");  if err != nil {
+			err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "./data")
+			if err != nil {
 				updateLogger.Println(err)
 			}
 		}
@@ -126,131 +107,22 @@ func checkForDependencies(url string) {
 	if websitesErr != nil {
 		fmt.Println("No websites folder")
 		if os.IsNotExist(websitesErr) {
-			err := os.Mkdir("C:/websites", 0755); if err != nil {
+			err := os.Mkdir("C:/websites", 0755)
+			if err != nil {
 				updateLogger.Println("Creating websites dir:", err)
 			}
 		}
 	}
 }
 
-// // getWebsitesSuperproject
-// //
-// // Issues git clone command to clone websites super project.
-// func getWebsitesSuperproject() error {
-// 	websitesSuper := exec.Command("git", "clone", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-// 	websitesSuper.Dir = GetRoot()
-// 	out, err := websitesSuper.CombinedOutput()
-// 	if err != nil {
-// 		// updateLogger.Println("Error cloning websites Superproject!!:", err)
-// 		return GitError{"Could not clone the websites superproject. Are you on the dock?", websitesSuper.Args, err}
-// 	}
-
-// 	updateLogger.Println("Cloned websites superproject:", string(out))
-// 	return nil
-
-// }
-
-// // GetWebsiteModule
-// //
-// // Executes git submodule command to initiate clone of selected submodule
-// func GetWebsiteModule(url string) (string, error) {
-// 	updateCmd := exec.Command("git", "submodule", "update", "--init", "--remote", url)
-// 	updateCmd.Dir = websitesPath
-// 	out, err := updateCmd.CombinedOutput()
-// 	if err != nil {
-
-// 		return "", GitError{"Failed to get " + url + ". Are you connected to the dock?", updateCmd.Args, err}
-// 	}
-
-// 	return string(out), nil
-// }
-
-// // pullWebsitesSuperproject
-// //
-// // Issues the git pull command to update the websites superproject
-// // and then calls submoduleUpdateAll()
-// func pullWebsitesSuperproject() error {
-// 	websitesPull := exec.Command("git", "pull", "--force", "http://192.168.1.47:3000/OfflineWebsites/websites.git")
-// 	websitesPull.Dir = websitesPath
-// 	out, err := websitesPull.CombinedOutput()
-// 	if err != nil {
-// 		return GitError{"Could not update the superproject", websitesPull.Args, err}
-// 	}
-
-// 	updateLogger.Println(string(out))
-// 	submoduleUpdateAll()
-
-// 	return nil
-
-// }
-
-// updateClassResources
-//
-// executes git pull command to get updates to the class resources repo
 func updateClassResources() error {
-	// gitPull := exec.Command("git", "pull", "--force", "origin", "main")
-	// gitPull.Dir = "./data"
-	// updateLogger.Println("Checking for class content")
-	// err := gitPull.Run()
-	// if err != nil {
-	// 	updateLogger.Println("err:", err)
-	// 	return GitError{"Failed to update lessons.", gitPull.Args, err}
-
-	// }
-	err := GitPull("./data"); if err != nil {
-        return err
-	} 
-
+	err := GitPull("./data")
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
-
-// // updateSubmodule
-// //
-// // updateSubmodule should run for every submodule in the websites folder
-// // executes "git submodule update --remote" on supplied repository.
-// func updateSubmodule(path string) error {
-// 	subUpdate := exec.Command("git", "submodule", "update", "--remote", path)
-// 	subUpdate.Dir = websitesPath
-// 	output, err := subUpdate.CombinedOutput()
-// 	if err != nil {
-// 		updateLogger.Println("Error updating website", path+":", err)
-// 		return GitError{
-// 			"Failed to update " + path,
-// 			subUpdate.Args,
-// 			err,
-// 		}
-// 	}
-
-// 	updateLogger.Println(path+":", string(output))
-// 	return nil
-// }
-
-// submoduleUpdateAll
-//
-// Runs git submodule status on the websites superproject and
-// finds all statuses beginning with "+". Then this string is
-// split at the spaces to isolate the submodule name that can
-// then be passed to updateSubmodule()
-// func submoduleUpdateAll() {
-
-// 	status := exec.Command("git", "submodule", "status")
-// 	status.Dir = "C:/websites"
-
-// 	out, _ := status.Output()
-
-// 	findNeedsUpdate, _ := regexp.Compile(`\+.+`)
-// 	foundNeedsUpdate := findNeedsUpdate.FindAll(out, -1)
-// 	if foundNeedsUpdate != nil {
-// 		for _, line := range foundNeedsUpdate {
-// 			submodule := strings.Split(string(line), " ")
-
-// 			updateSubmodule(submodule[1])
-// 		}
-// 	} else {
-// 		updateLogger.Println("All downloaded websites are up to date!")
-// 	}
-// }
 
 // GetLocalIP
 //
@@ -311,7 +183,8 @@ func checkUserConfig() {
 		"user.name":  userName,
 		"user.email": fmt.Sprintf("%s@edcc.edu", userName),
 	} {
-		err := command.CheckConfigKeyIsSet(Key, Value); if err != nil {
+		err := command.CheckConfigKeyIsSet(Key, Value)
+		if err != nil {
 			fmt.Println("[cUC]:", err)
 		}
 	}

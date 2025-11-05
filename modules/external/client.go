@@ -28,11 +28,11 @@ type ExternalData struct {
 }
 
 type Info struct {
-	Size        int
-	Topics      []string
-	Description string
-	Created_At  time.Time
-	Updated_At  time.Time
+	Size        int       `json:"size"`
+	Topics      []string  `json:"topics"`
+	Description string    `json:"description"`
+	Created_At  time.Time `json:"created_at"`
+	Updated_At  time.Time `json:"updated_at"`
 }
 
 type DataStuff struct {
@@ -40,16 +40,21 @@ type DataStuff struct {
 }
 
 type WebsiteInfo struct {
-	Domain    string
-	IndexPath string
-	Installed bool
-	IsCurrent bool
-	Meta      Info
-	IsOrphan  bool
+	Domain    string `json:"domain"`
+	IndexPath string `json:"indexPath"`
+	Installed bool   `json:"installed"`
+	IsCurrent bool   `json:"isCurrent"`
+	IsOrphan  bool   `json:"isOrphan"`
+	Meta      Info   `json:"meta"`
 }
 
 var websites string = CIS.GetOSPaths().Websites
 
+// GetSiteMetaData
+//
+// This checks to see if info.json exists and calls createSiteMetaData if it does not.
+// If info.json does exist, it returns a slice of ExternalData structs containing pertinent
+// information about the website.
 func GetSiteMetaData() ([]ExternalData, error) {
 	_, err := os.Stat(websites + "/info.json")
 	if err != nil {
@@ -79,6 +84,10 @@ func GetSiteMetaData() ([]ExternalData, error) {
 	return MetaSlice, nil
 }
 
+// loadMetaFromFile
+//
+// Opens and processes the metadata from info.json and returns a
+// slice of MetaData structs.
 func loadMetaFromFile() ([]MetaData, error) {
 	SiteData := DataStuff{}
 	fsys := os.DirFS(websites)
@@ -95,6 +104,10 @@ func loadMetaFromFile() ([]MetaData, error) {
 	return SiteData.Data, nil
 }
 
+// UpdateSiteMetaData
+//
+// Compares local copy of metadata against external data from Gitea API.
+// Should update all fields except size and updated_at fields automatically.
 func UpdateSiteMetaData() error {
 	networkData := []MetaData{}
 	fileData, err := loadMetaFromFile()
@@ -129,10 +142,13 @@ func UpdateSiteMetaData() error {
 	return err
 }
 
+// createSiteMetaData
+//
+// Creates info.json and writes the content of the Gitea API call response
 func createSiteMetaData() error {
 	file, err := os.OpenFile(websites+"/info.json", os.O_CREATE, 0755)
 	if err != nil {
-		fmt.Println(err)
+		return fmt.Errorf("something went wrong opening info file: %w", err)
 	}
 	defer file.Close()
 	metaReader, err := getMetaFromGitea()
@@ -144,6 +160,9 @@ func createSiteMetaData() error {
 	return nil
 }
 
+// getMetaFromGitea
+//
+// Returns a bufio.Reader of the response from Gitea
 func getMetaFromGitea() (*bufio.Reader, error) {
 	client := http.DefaultClient
 	res, err := client.Get("http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200")
@@ -155,6 +174,13 @@ func getMetaFromGitea() (*bufio.Reader, error) {
 	return reader, nil
 }
 
+// SendSiteList
+//
+// Returns a slice of WebsiteInfo structs containing information
+// regarding all the websites in the website folder including
+// websites not hosted on Gitea. This allows for an accurate
+// representation of the websites located on the user's local
+// system.
 func SendSiteList() ([]WebsiteInfo, error) {
 	externalSiteList := []string{}
 	localWebsitesDir := CIS.RootDir{Root: CIS.GetOSPaths().Websites}
@@ -164,15 +190,17 @@ func SendSiteList() ([]WebsiteInfo, error) {
 		return nil, fmt.Errorf("did not get metadata: %w", err)
 	}
 	websiteInfoSlice := []WebsiteInfo{}
-	// for _, item := range websitesList {
-	// metaInfo := external.Info{}
 	for _, website := range websiteMetaData {
+		filePath := CIS.GetOSPaths().Websites + "/" + website.Name
 		externalSiteList = append(externalSiteList, website.Name)
 		index := ""
-		websiteRoot := CIS.MakeRootDir(CIS.GetOSPaths().Websites + "/" + website.Name)
-		websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
-			index = path + "/" + ent.Name()
-		})
+		_, err := os.Stat(filePath)
+		if err == nil {
+			websiteRoot := CIS.MakeRootDir(filePath)
+			websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
+				index = path + "/" + ent.Name()
+			})
+		}
 		singlePage := WebsiteInfo{}
 		singlePage.Installed = slices.Contains(localWebsitesContents, website.Name)
 		if singlePage.Installed {
@@ -214,8 +242,8 @@ func SendSiteList() ([]WebsiteInfo, error) {
 				index,
 				true,
 				true,
-				orphanMeta,
 				true,
+				orphanMeta,
 			}
 			websiteInfoSlice = append(websiteInfoSlice, orphanedSiteInfo)
 
@@ -232,7 +260,6 @@ func IsOrphanSite(local ExternalData) bool {
 	if err != nil {
 		return true
 	}
-	// return !slices.Contains(localWebsitesContents, local.Name)
 	for _, local := range localWebsitesContents {
 		for _, network := range networkSites {
 			if local == network.Name {
