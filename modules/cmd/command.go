@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -10,11 +11,11 @@ type CmdArgs string
 type Command struct {
 	Prog string
 	Args []string
-	Cmd *exec.Cmd
+	Cmd  *exec.Cmd
 }
 
 type CmdError struct {
-	err error
+	err    error
 	stderr string
 	errMsg string
 }
@@ -34,10 +35,10 @@ func (e CmdError) StdErr() string {
 //
 // Takes supplied args and creates a Command to run a git cmd
 func MakeGitCmd(dir string, args ...string) *Command {
-	c := &Command{} 
-	
+	c := &Command{}
+
 	c.Prog = "git"
-	c.Args = args 
+	c.Args = args
 	c.Cmd = exec.Command(c.Prog, c.Args...)
 	c.Cmd.Dir = dir
 	return c
@@ -51,51 +52,52 @@ func MakeGitCmd(dir string, args ...string) *Command {
 // failing to commit on pull/merge for new students
 // these values can be changed via git cli without issue
 func CheckConfigKeyIsSet(key string, value string) error {
-	confChk := MakeGitCmd("config", "get", "--global", key)
+	confChk := MakeGitCmd(os.Getenv("PWD"), "config", "get", "--global", key)
 
-	err := confChk.Cmd.Run(); if err == nil {
+	err := confChk.Cmd.Run()
+	if err == nil {
 		// Key is set and has values
 		return nil
 	}
-	// If the program has gotten to this point, set the 
+	// If the program has gotten to this point, set the
 	// key to the supplied values
 	// TODO: Specifically check for "exit status 1"
-	setKey := MakeGitCmd("config", "set","--global", key, value)
+	setKey := MakeGitCmd(os.Getenv("PWD"), "config", "set", "--global", key, value)
 	return setKey.Cmd.Run()
 }
 
 // Command.ProcessState
 //
 // returns the state of the corresponding process
-	func (c Command) ProcessState() string {
-		if c.Cmd == nil {
-			return ""
-		}
-		return c.Cmd.ProcessState.String()
+func (c Command) ProcessState() string {
+	if c.Cmd == nil {
+		return ""
+	}
+	return c.Cmd.ProcessState.String()
+}
+
+// Command.AdArgs
+//
+// Appends the given args to the Command struct
+func (c Command) AddArgs(args ...CmdArgs) Command {
+	for _, arg := range args {
+		c.Args = append(c.Args, string(arg))
 	}
 
-	// Command.AdArgs
-	//
-	// Appends the given args to the Command struct
-	func (c Command) AddArgs(args ...CmdArgs) Command {
-		for _, arg := range args {
-			c.Args = append(c.Args, string(arg))
-		}
+	return c
+}
 
-		return c
-	}
+// func (c Command) AddOptions(opts ...string) Command {
+// 	for _, opt := range opts {
+// 		formattedOpt := fmt.Sprint("--opt=")
+// 		c.Args = append(c.Args, "--"+opt)
+// 	}
+// 	return c
+// }
 
-	// func (c Command) AddOptions(opts ...string) Command {
-	// 	for _, opt := range opts {
-	// 		formattedOpt := fmt.Sprint("--opt=")
-	// 		c.Args = append(c.Args, "--"+opt)
-	// 	}
-	// 	return c
-	// }
-
-	// isValidOption
-	//
-	// Returns whether arg is valid option or not
-	func isValidOption(str string) bool {
-		return str != "" && str[0] == '-'
-	}
+// isValidOption
+//
+// Returns whether arg is valid option or not
+func isValidOption(str string) bool {
+	return str != "" && str[0] == '-'
+}
