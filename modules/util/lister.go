@@ -1,5 +1,5 @@
 // Rocky Connor 420711
-package CIS
+package util
 
 import (
 	"fmt"

@@ -1,12 +1,11 @@
 package external
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
-	CIS "localhost/CIS/modules"
+	"localhost/CIS/modules/util"
 	"net/http"
 	"os"
 	"slices"
@@ -48,7 +47,7 @@ type WebsiteInfo struct {
 	Meta      Info   `json:"meta"`
 }
 
-var websites string = CIS.GetOSPaths().Websites
+var websites string = util.GetOSPaths().Websites
 
 // GetSiteMetaData
 //
@@ -58,19 +57,17 @@ var websites string = CIS.GetOSPaths().Websites
 func GetSiteMetaData() ([]ExternalData, error) {
 	_, err := os.Stat(websites + "/info.json")
 	if err != nil {
+		fmt.Println(os.IsNotExist(err))
 		if os.IsNotExist(err) {
 			err := createSiteMetaData()
 			if err != nil {
 				return nil, fmt.Errorf("could not create the meta file: %w", err)
 			}
+		} else {
+
+			return nil, fmt.Errorf("problem opening website metadata: %w", err)
 		}
-		return nil, fmt.Errorf("problem opening website metadata: %w", err)
 	}
-	file, err := os.OpenFile(websites+"/info.json", os.O_RDWR, 0755)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer file.Close()
 
 	metaSlice, err := loadMetaFromFile()
 	if err != nil {
@@ -109,17 +106,18 @@ func loadMetaFromFile() ([]MetaData, error) {
 // Compares local copy of metadata against external data from Gitea API.
 // Should update all fields except size and updated_at fields automatically.
 func UpdateSiteMetaData() error {
-	networkData := []MetaData{}
-	fileData, err := loadMetaFromFile()
+	file, err := os.OpenFile(websites+"/info.json", os.O_RDWR, 0755)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+	networkData := DataStuff{}
+	fileData, err := SendSiteList()
 	if err != nil {
 		return fmt.Errorf("could not update site list:  %w", err)
 	}
 
-	reader, err := getMetaFromGitea()
-	if err != nil {
-		return fmt.Errorf("could not update site data: %w", err)
-	}
-	networkBytes, err := io.ReadAll(reader)
+	networkBytes, err := getMetaFromGitea()
 	if err != nil {
 		return fmt.Errorf("could not update site data: %w", err)
 	}
@@ -130,22 +128,32 @@ func UpdateSiteMetaData() error {
 	}
 
 	for _, localSite := range fileData {
-		for _, networkSite := range networkData {
-			if localSite.Name == networkSite.Name {
-				if localSite.Updated_At != networkSite.Updated_At || localSite.Size != networkSite.Size {
-					fmt.Println("need update")
+		for _, networkSite := range networkData.Data {
+			if localSite.Domain == networkSite.Name {
+				localSite.Meta.Description = networkSite.Description
+				localSite.Meta.Topics = networkSite.Topics
+				if localSite.Meta.Updated_At != networkSite.Updated_At || localSite.Meta.Size != networkSite.Size {
+					localSite.IsCurrent = false
 				}
 			}
 		}
 	}
 
-	return err
+	toWrite, err := json.Marshal(&fileData)
+	if err != nil {
+		return fmt.Errorf("could not update json: %w", err)
+	}
+
+	file.Write(toWrite)
+
+	return nil
 }
 
 // createSiteMetaData
 //
 // Creates info.json and writes the content of the Gitea API call response
 func createSiteMetaData() error {
+	metaSlice := DataStuff{}
 	file, err := os.OpenFile(websites+"/info.json", os.O_CREATE, 0755)
 	if err != nil {
 		return fmt.Errorf("something went wrong opening info file: %w", err)
@@ -155,7 +163,20 @@ func createSiteMetaData() error {
 	if err != nil {
 		return fmt.Errorf("could not get the data from Gitea: %w", err)
 	}
-	metaReader.WriteTo(file)
+	err = json.Unmarshal(metaReader, &metaSlice)
+	if err != nil {
+		return fmt.Errorf("could not unmarshal in create: %w", err)
+	}
+
+	condensedMeta, err := json.Marshal(&metaSlice)
+	if err != nil {
+		return fmt.Errorf("could not marshal in create: %w", err)
+	}
+
+	_, err = file.Write(condensedMeta)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -163,15 +184,19 @@ func createSiteMetaData() error {
 // getMetaFromGitea
 //
 // Returns a bufio.Reader of the response from Gitea
-func getMetaFromGitea() (*bufio.Reader, error) {
+func getMetaFromGitea() ([]byte, error) {
 	client := http.DefaultClient
 	res, err := client.Get("http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200")
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to API. Make sure you are connected to the network: %w", err)
 	}
 
-	reader := bufio.NewReader(res.Body)
-	return reader, nil
+	// reader := bufio.NewReader(res.Body)
+	bodyContent, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read body: %w", err)
+	}
+	return bodyContent, nil
 }
 
 // SendSiteList
@@ -183,7 +208,7 @@ func getMetaFromGitea() (*bufio.Reader, error) {
 // system.
 func SendSiteList() ([]WebsiteInfo, error) {
 	externalSiteList := []string{}
-	localWebsitesDir := CIS.RootDir{Root: CIS.GetOSPaths().Websites}
+	localWebsitesDir := util.RootDir{Root: util.GetOSPaths().Websites}
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 	websiteMetaData, err := GetSiteMetaData()
 	if err != nil {
@@ -191,12 +216,12 @@ func SendSiteList() ([]WebsiteInfo, error) {
 	}
 	websiteInfoSlice := []WebsiteInfo{}
 	for _, website := range websiteMetaData {
-		filePath := CIS.GetOSPaths().Websites + "/" + website.Name
+		filePath := util.GetOSPaths().Websites + "/" + website.Name
 		externalSiteList = append(externalSiteList, website.Name)
 		index := ""
 		_, err := os.Stat(filePath)
 		if err == nil {
-			websiteRoot := CIS.MakeRootDir(filePath)
+			websiteRoot := util.MakeRootDir(filePath)
 			websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
 				index = path + "/" + ent.Name()
 			})
@@ -221,7 +246,7 @@ func SendSiteList() ([]WebsiteInfo, error) {
 	for _, dirent := range localWebsitesContents {
 		if !slices.Contains(externalSiteList, dirent) {
 			orphanMeta := Info{}
-			fileInfo, err := os.Stat(CIS.GetOSPaths().Websites + "/" + dirent)
+			fileInfo, err := os.Stat(util.GetOSPaths().Websites + "/" + dirent)
 			if err == nil {
 				orphanMeta = Info{
 					int(fileInfo.Size()),
@@ -232,7 +257,7 @@ func SendSiteList() ([]WebsiteInfo, error) {
 				}
 			}
 			index := ""
-			orphanRoot := CIS.RootDir{Root: CIS.GetOSPaths().Websites + "/" + dirent}
+			orphanRoot := util.RootDir{Root: util.GetOSPaths().Websites + "/" + dirent}
 			orphanRoot.FindIndex(func(path string, ent fs.DirEntry) {
 				index = path + "/" + ent.Name()
 
@@ -254,7 +279,7 @@ func SendSiteList() ([]WebsiteInfo, error) {
 }
 
 func IsOrphanSite(local ExternalData) bool {
-	localWebsitesDir := CIS.RootDir{Root: CIS.GetOSPaths().Websites}
+	localWebsitesDir := util.RootDir{Root: util.GetOSPaths().Websites}
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 	networkSites, err := loadMetaFromFile()
 	if err != nil {
@@ -281,11 +306,8 @@ func IsSiteCurrent() bool {
 	if err != nil {
 		return true
 	}
-	resSlice, err := io.ReadAll(reader)
-	if err != nil {
-		return true
-	}
-	err = json.Unmarshal(resSlice, &data)
+
+	err = json.Unmarshal(reader, &data)
 	if err != nil {
 		return true
 	}

@@ -4,6 +4,8 @@ package CIS
 import (
 	"fmt"
 	command "localhost/CIS/modules/cmd"
+	"localhost/CIS/modules/external"
+	"localhost/CIS/modules/util"
 	"log"
 	"net"
 	"os"
@@ -30,7 +32,7 @@ type GitError struct {
 	ErrorWrapped error
 }
 
-var websitesPath = GetOSPaths().Websites
+var websitesPath = util.GetOSPaths().Websites
 
 // Creates a logger instance specifically for the update functions to inform user of update related events
 var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
@@ -58,8 +60,12 @@ func (np NetworkPinger) Update() {
 	checkInterval := time.NewTicker(time.Duration(np.Timeout) * interval)
 	hasCheckedDeps := false
 	if ipData.isConnected {
+		err := external.UpdateSiteMetaData()
+		if err != nil {
+			updateLogger.Println(err)
+		}
 		checkForDependencies(np.Url)
-		err := updateClassResources()
+		err = updateClassResources()
 		if err != nil {
 			updateLogger.Println(err)
 		}
@@ -71,6 +77,7 @@ func (np NetworkPinger) Update() {
 		if ipData.isConnected {
 			fmt.Println(time.Now())
 			if hasCheckedDeps {
+				external.UpdateSiteMetaData()
 				err := updateClassResources()
 				if err != nil {
 					updateLogger.Println(err)
@@ -96,7 +103,7 @@ func checkForDependencies(url string) {
 	_, dirErr := os.Stat(cwd + "/data")
 	if dirErr != nil {
 		if os.IsNotExist(dirErr) {
-			err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "./data")
+			err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "data")
 			if err != nil {
 				updateLogger.Println(err)
 			}

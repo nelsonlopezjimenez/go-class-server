@@ -1,4 +1,4 @@
-package CIS
+package util
 
 import (
 	"embed"
@@ -95,8 +95,9 @@ func GetRoot() string {
 	}
 }
 
-func  DeleteSite(dir string) error {
-	err := os.RemoveAll(dir);  if err != nil {
+func DeleteSite(dir string) error {
+	err := os.RemoveAll(dir)
+	if err != nil {
 		return err
 	}
 	return nil

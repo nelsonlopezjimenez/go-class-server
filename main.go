@@ -16,6 +16,7 @@ import (
 
 	CIS "localhost/CIS/modules"
 	"localhost/CIS/modules/external"
+	"localhost/CIS/modules/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ var (
 
 var updateIP string
 
-var filePath = CIS.GetOSPaths()
+var filePath = util.GetOSPaths()
 
 func usage() {
 	fmt.Println("usage: ClassServer -flag options")
@@ -80,7 +81,7 @@ func main() {
 	})
 	api := server.Group("/api")
 	// The following line defines a static asset folder
-	fsys, err := CIS.GetFileSystemHandler()
+	fsys, err := util.GetFileSystemHandler()
 	if err != nil {
 		serverLog.Println("there was an error in the embedded fs:", err)
 	}
@@ -139,7 +140,7 @@ func main() {
 
 	server.GET("/", func(ctx *gin.Context) {
 		// route function for handling requests to the root
-		index, err := CIS.GetIndex()
+		index, err := util.GetIndex()
 		if err != nil {
 			serverLog.Panicln(err)
 		}
@@ -148,7 +149,7 @@ func main() {
 
 	server.GET("/:allOther/*any", func(ctx *gin.Context) {
 		// ctx.Redirect(301, "/")
-		index, err := CIS.GetIndex()
+		index, err := util.GetIndex()
 		if err != nil {
 			serverLog.Panicln(err)
 		}
@@ -225,7 +226,7 @@ func main() {
 	})
 
 	api.GET("/lessons", func(ctx *gin.Context) {
-		testList := CIS.RootDir{Root: "./data/markdown/lessons"}
+		testList := util.RootDir{Root: "./data/markdown/lessons"}
 
 		testSlice := map[string][]string{}
 
@@ -240,15 +241,15 @@ func main() {
 		subdir := ctx.Param("subdir")
 		lessonName := ctx.Param("lesson")
 
-		lesson := CIS.MakeLessonInfo(subdir, lessonName+".md", serverLog)
+		lesson := util.MakeLessonInfo(subdir, lessonName+".md", serverLog)
 		ctx.JSON(200, lesson)
 
 	})
 
 	api.GET("/data/lessons", func(ctx *gin.Context) {
-		lessons := []CIS.LessonInfo{}
+		lessons := []util.LessonInfo{}
 
-		lessonList := CIS.RootDir{Root: "./data/markdown/lessons"}
+		lessonList := util.RootDir{Root: "./data/markdown/lessons"}
 
 		infoSlice := map[string][]string{}
 
@@ -259,7 +260,7 @@ func main() {
 
 		for subdir, lessonSubdir := range infoSlice {
 			for _, lessonMD := range lessonSubdir {
-				lesson := CIS.MakeLessonInfo(subdir, lessonMD, serverLog)
+				lesson := util.MakeLessonInfo(subdir, lessonMD, serverLog)
 				lessons = append(lessons, lesson)
 			}
 			ctx.JSON(200, lessons)
@@ -300,7 +301,7 @@ func main() {
 			}
 		case "delete":
 			// delete specified domain dir
-			CIS.DeleteSite(filePath.Websites + "/" + submodule)
+			util.DeleteSite(filePath.Websites + "/" + submodule)
 		default:
 			ctx.Status(403)
 			return
@@ -317,7 +318,7 @@ func main() {
 
 	if !isDev {
 		url := "http://localhost:" + *port
-		CIS.OpenBrowser(url)
+		util.OpenBrowser(url)
 	}
 
 	// Starts the server on the specified port
