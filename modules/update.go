@@ -46,7 +46,11 @@ var ipData IPInfo
 func (np NetworkPinger) Update() {
 	ipData = GetLocalIP()
 	if ipData.isConnected {
-		err := updateClassResources()
+		err := external.UpdateSiteMetaData()
+		if err != nil {
+			updateLogger.Println(err)
+		}
+		err = updateClassResources()
 		if err != nil {
 			fmt.Println("I'm an error!")
 			updateLogger.Println(err)
@@ -103,10 +107,11 @@ func checkForDependencies(url string) {
 	_, dirErr := os.Stat(cwd + "/data")
 	if dirErr != nil {
 		if os.IsNotExist(dirErr) {
-			err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "data")
+			output, err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "data")
 			if err != nil {
 				updateLogger.Println(err)
 			}
+			updateLogger.Printf("%s", output)
 		}
 
 	}
@@ -123,10 +128,11 @@ func checkForDependencies(url string) {
 }
 
 func updateClassResources() error {
-	err := GitPull("./data")
+	out, err := GitPull("./data")
 	if err != nil {
 		return err
 	}
+	updateLogger.Printf("%s", out)
 
 	return nil
 }

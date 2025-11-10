@@ -12,26 +12,21 @@ import (
 	"time"
 )
 
-type MetaData struct {
-	Name        string    `json:"name"`
-	Size        int       `json:"size"`
-	Topics      []string  `json:"topics"`
-	Description string    `json:"description"`
-	Created_At  time.Time `json:"created_at"`
-	Updated_At  time.Time `json:"updated_at"`
-}
-
-type ExternalData struct {
-	Name string
-	Meta Info
-}
-
 type Info struct {
 	Size        int       `json:"size"`
 	Topics      []string  `json:"topics"`
 	Description string    `json:"description"`
 	Created_At  time.Time `json:"created_at"`
 	Updated_At  time.Time `json:"updated_at"`
+}
+type MetaData struct {
+	Name string `json:"name"`
+	Info
+}
+
+type ExternalData struct {
+	Name string
+	Meta Info
 }
 
 type DataStuff struct {
@@ -41,10 +36,8 @@ type DataStuff struct {
 type WebsiteInfo struct {
 	Domain    string `json:"domain"`
 	IndexPath string `json:"indexPath"`
-	Installed bool   `json:"installed"`
-	IsCurrent bool   `json:"isCurrent"`
-	IsOrphan  bool   `json:"isOrphan"`
-	Meta      Info   `json:"meta"`
+	State     string `json:"state"`
+	Info      `json:"meta"`
 }
 
 var websites string = util.GetOSPaths().Websites
@@ -106,45 +99,47 @@ func loadMetaFromFile() ([]MetaData, error) {
 // Compares local copy of metadata against external data from Gitea API.
 // Should update all fields except size and updated_at fields automatically.
 func UpdateSiteMetaData() error {
-	file, err := os.OpenFile(websites+"/info.json", os.O_RDWR, 0755)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer file.Close()
-	networkData := DataStuff{}
-	fileData, err := SendSiteList()
-	if err != nil {
-		return fmt.Errorf("could not update site list:  %w", err)
-	}
+	// file, err := os.OpenFile(websites+"/info.json", os.O_RDWR, 0755)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// defer file.Close()
+	// networkData := DataStuff{}
+	// fileData, err := SendSiteList()
+	// if err != nil {
+	// 	return fmt.Errorf("could not update site list:  %w", err)
+	// }
+	// fmt.Printf("fileData: %v\n", fileData)
 
-	networkBytes, err := getMetaFromGitea()
-	if err != nil {
-		return fmt.Errorf("could not update site data: %w", err)
-	}
+	// networkBytes, err := getMetaFromGitea()
+	// if err != nil {
+	// 	return fmt.Errorf("could not update site data: %w", err)
+	// }
 
-	err = json.Unmarshal(networkBytes, &networkData)
-	if err != nil {
-		return fmt.Errorf("could not read network data to memory: %w", err)
-	}
+	// err = json.Unmarshal(networkBytes, &networkData)
+	// if err != nil {
+	// 	return fmt.Errorf("could not read network data to memory: %w", err)
+	// }
+	// fmt.Printf("networkData: %s\n", networkData)
 
-	for _, localSite := range fileData {
-		for _, networkSite := range networkData.Data {
-			if localSite.Domain == networkSite.Name {
-				localSite.Meta.Description = networkSite.Description
-				localSite.Meta.Topics = networkSite.Topics
-				if localSite.Meta.Updated_At != networkSite.Updated_At || localSite.Meta.Size != networkSite.Size {
-					localSite.IsCurrent = false
-				}
-			}
-		}
-	}
+	// // for _, localSite := range fileData {
+	// // 	for _, networkSite := range networkData.Data {
+	// // 		if localSite.Domain == networkSite.Name {
+	// // 			localSite.Description = networkSite.Description
+	// // 			localSite.Topics = networkSite.Topics
+	// // 			if localSite.Updated_At != networkSite.Updated_At || localSite.Size != networkSite.Size {
+	// // 				localSite.IsCurrent = false
+	// // 			}
+	// // 		}
+	// // 	}
+	// // }
 
-	toWrite, err := json.Marshal(&fileData)
-	if err != nil {
-		return fmt.Errorf("could not update json: %w", err)
-	}
-
-	file.Write(toWrite)
+	// toWrite, err := json.Marshal(&fileData)
+	// if err != nil {
+	// 	return fmt.Errorf("could not update json: %w", err)
+	// }
+	// fmt.Printf("toWrite: %s\n", toWrite)
+	// file.Write((toWrite))
 
 	return nil
 }
@@ -227,17 +222,26 @@ func SendSiteList() ([]WebsiteInfo, error) {
 			})
 		}
 		singlePage := WebsiteInfo{}
-		singlePage.Installed = slices.Contains(localWebsitesContents, website.Name)
-		if singlePage.Installed {
-			singlePage.IndexPath = index
-			singlePage.IsCurrent = IsSiteCurrent()
+		// singlePage.Installed = slices.Contains(localWebsitesContents, website.Name)
+		// if singlePage.Installed {
+		singlePage.IndexPath = index
+		// 	singlePage.IsCurrent = IsSiteCurrent()
+		// } else {
+		// 	singlePage.IsCurrent = false
+		// }
+		// singlePage.IsOrphan = false
+		if slices.Contains(localWebsitesContents, website.Name) {
+			if IsSiteCurrent() {
+				singlePage.State = "installed"
+			} else {
+				singlePage.State = "update_needed"
+			}
 		} else {
-			singlePage.IsCurrent = false
+			singlePage.State = "not_installed"
 		}
-		singlePage.IsOrphan = false
 
 		singlePage.Domain = website.Name
-		singlePage.Meta = website.Meta
+		singlePage.Info = website.Meta
 
 		websiteInfoSlice = append(websiteInfoSlice, singlePage)
 
@@ -265,9 +269,7 @@ func SendSiteList() ([]WebsiteInfo, error) {
 			orphanedSiteInfo := WebsiteInfo{
 				dirent,
 				index,
-				true,
-				true,
-				true,
+				"orphan",
 				orphanMeta,
 			}
 			websiteInfoSlice = append(websiteInfoSlice, orphanedSiteInfo)

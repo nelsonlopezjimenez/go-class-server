@@ -41,6 +41,9 @@ func MakeGitCmd(dir string, args ...string) *Command {
 	c.Args = args
 	c.Cmd = exec.Command(c.Prog, c.Args...)
 	c.Cmd.Dir = dir
+	// _, err := exec.LookPath(c.Prog); if err != nil {
+	// 	return nil
+	// }
 	return c
 }
 

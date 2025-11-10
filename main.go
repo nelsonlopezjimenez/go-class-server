@@ -281,27 +281,34 @@ func main() {
 	})
 
 	api.GET("/git/:command/:submodule", func(ctx *gin.Context) {
+		type ReturnOutput map[string]string
 		submodule := ctx.Param("submodule")
 		command := ctx.Param("command")
 		serverLog.Println(command)
+		var consoleOutput string
 		switch command {
 		case "update":
-			err := CIS.GitPull(filePath.Websites + "/" + submodule)
+			consoleOutputBytes, err := CIS.GitPull(filePath.Websites + "/" + submodule)
 			if err != nil {
 				ctx.JSON(500, err.Error())
 				return
 			}
+			consoleOutput = string(consoleOutputBytes)
 		case "install":
-			err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/"+submodule+".git", submodule)
+			consoleOutputBytes, err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/"+submodule+".git", submodule)
 			if err != nil {
 				fmt.Println("[main]", err)
 
 				ctx.JSON(500, err.Error())
 				return
 			}
+			consoleOutput = string(consoleOutputBytes)
 		case "delete":
 			// delete specified domain dir
-			util.DeleteSite(filePath.Websites + "/" + submodule)
+			err := util.DeleteSite(filePath.Websites + "/" + submodule)
+			if err != nil {
+				consoleOutput = err.Error()
+			}
 		default:
 			ctx.Status(403)
 			return
@@ -313,7 +320,7 @@ func main() {
 		// 		// serverLog.Println("Error Downloading website:", gitErr.Error())
 		// 		return
 		// 	}
-		ctx.Status(200)
+		ctx.JSON(200, ReturnOutput{"output": string(consoleOutput)})
 	})
 
 	if !isDev {
