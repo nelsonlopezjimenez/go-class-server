@@ -30,7 +30,7 @@ type ExternalData struct {
 }
 
 type DataStuff struct {
-	Data []WebsiteInfo `json:"data"`
+	Data []MetaData `json:"data"`
 }
 
 type WebsiteInfo struct {
@@ -58,6 +58,7 @@ func getMetaFromGitea() ([]byte, error) {
 }
 
 func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
+	//! I believe the metadata issue is found in this function
 	var processedMetaData DataStuff
 	var processedWebsiteInfo []WebsiteInfo
 
@@ -65,8 +66,9 @@ func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
 	if err != nil {
 	}
 
-	for _, metaData := range processedMetaData.Data {
-		filePath := util.GetOSPaths().Websites + "/" + metaData.Domain
+	for i, metaData := range processedMetaData.Data {
+		fmt.Printf("metaData: %v\n", metaData)
+		filePath := util.GetOSPaths().Websites + "/" + metaData.Name
 		index := ""
 		_, err := os.Stat(filePath)
 		if err == nil {
@@ -76,10 +78,10 @@ func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
 			})
 		}
 		siteData := WebsiteInfo{
-			metaData.Domain,
+			processedMetaData.Data[i].Name,
 			index,
 			"not_installed",
-			metaData.Info,
+			processedMetaData.Data[i].Info,
 		}
 
 		processedWebsiteInfo = append(processedWebsiteInfo, siteData)
@@ -102,6 +104,7 @@ func createLocalMeta() error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	toWrite, err := json.Marshal(processedWebInfo)
 	if err != nil {
@@ -116,6 +119,8 @@ func createLocalMeta() error {
 }
 
 func loadMetaFromFile() ([]WebsiteInfo, error) {
+	//! No data is being unmarshaled into localMeta
+	// which makes sense because the json file has no data
 	var localMeta []WebsiteInfo
 	file, err := os.ReadFile(websites + "/info.json")
 	if err != nil {
@@ -133,7 +138,7 @@ func loadMetaFromFile() ([]WebsiteInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fromFile: %w", err)
 	}
-
+	fmt.Printf("localMeta: %v\n", localMeta)
 	return localMeta, nil
 }
 
@@ -146,13 +151,11 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Printf("localData: %v\n", localData)
 	_, err = getMetaFromGitea()
 	if err != nil {
 		goto offline
 	}
-
-	fmt.Printf("localData: %v\n", localData)
 
 offline:
 	for i, website := range localData {
@@ -167,6 +170,7 @@ offline:
 }
 
 func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
+	//! The problem is actually found here with classSites not being populated
 	var classSites []string
 	localWebsitesDir := util.RootDir{Root: websites}
 
@@ -174,6 +178,9 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 	for _, external := range siteList {
 		classSites = append(classSites, external.Domain)
 	}
+	fmt.Printf("localWebsitesDir: %v\n", localWebsitesContents)
+	fmt.Printf("classSites: %v\n", classSites)
+	fmt.Printf("siteList: %v\n", siteList)
 
 	for _, dirent := range localWebsitesContents {
 		if !slices.Contains(classSites, dirent) {
@@ -212,6 +219,7 @@ func SendAllSites() ([]WebsiteInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("external form  SAS: %v\n", external)
 
 	allSites, err := processOrphanSites(external)
 	if err != nil {
@@ -222,33 +230,36 @@ func SendAllSites() ([]WebsiteInfo, error) {
 }
 
 func UpdateSiteMetaData() error {
-	local, err := loadMetaFromFile()
-	if err != nil {
-		return err
-	}
+	// allSites, err := SendAllSites(); if err != nil {
+	// 	return err
+	// }
+	// local, err := loadMetaFromFile()
+	// if err != nil {
+	// 	return err
+	// }
 
-	external, err := getMetaFromGitea()
-	if err != nil {
-		return err
-	}
+	// external, err := getMetaFromGitea()
+	// if err != nil {
+	// 	return err
+	// }
 
-	processedExt, err := processMetaBytesFromGitea(external)
-	if err != nil {
-		return err
-	}
+	// processedExt, err := processMetaBytesFromGitea(external)
+	// if err != nil {
+	// 	return err
+	// }
 
-	if len(local) == len(processedExt) {
-		for i, localSite := range local {
-			for _, externalSite := range processedExt {
-				if localSite.Domain == externalSite.Domain {
-					local[i].Description = externalSite.Description
-					local[i].Topics = externalSite.Topics
-					if localSite.Size != externalSite.Size || localSite.Updated_At != externalSite.Updated_At {
-						local[i].State = "update_needed"
-					}
-				}
-			}
-		}
-	}
+	// if len(local) == len(processedExt) {
+	// 	for i, localSite := range local {
+	// 		for _, externalSite := range processedExt {
+	// 			if localSite.Domain == externalSite.Domain {
+	// 				local[i].Description = externalSite.Description
+	// 				local[i].Topics = externalSite.Topics
+	// 				if localSite.Size != externalSite.Size || localSite.Updated_At != externalSite.Updated_At {
+	// 					local[i].State = "update_needed"
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	return nil
 }
