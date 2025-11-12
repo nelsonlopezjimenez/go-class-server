@@ -15,7 +15,7 @@ Host: 192.168.1.47:3000
 GET /api/links HTTP/1.1
 Host: localhost:22022
 
-### install chakra-ui
+### install old.mozilla.org
 GET /api/git/install/old.mozilla.org HTTP/1.1
 Host: localhost:22022
 
