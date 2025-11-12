@@ -30,11 +30,11 @@ type ExternalData struct {
 }
 
 type DataStuff struct {
-	Data []MetaData `json:"data"`
+	Data []WebsiteInfo `json:"data"`
 }
 
 type WebsiteInfo struct {
-	Domain    string `json:"domain"`
+	Domain    string `json:"name"`
 	IndexPath string `json:"indexPath"`
 	State     string `json:"state"`
 	Info      `json:"meta"`
@@ -42,177 +42,31 @@ type WebsiteInfo struct {
 
 var websites string = util.GetOSPaths().Websites
 
-// GetSiteMetaData
-//
-// This checks to see if info.json exists and calls createSiteMetaData if it does not.
-// If info.json does exist, it returns a slice of ExternalData structs containing pertinent
-// information about the website.
-func GetSiteMetaData() ([]ExternalData, error) {
-	_, err := os.Stat(websites + "/info.json")
-	if err != nil {
-		fmt.Println(os.IsNotExist(err))
-		if os.IsNotExist(err) {
-			err := createSiteMetaData()
-			if err != nil {
-				return nil, fmt.Errorf("could not create the meta file: %w", err)
-			}
-		} else {
-
-			return nil, fmt.Errorf("problem opening website metadata: %w", err)
-		}
-	}
-
-	metaSlice, err := loadMetaFromFile()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	MetaSlice := []ExternalData{}
-	for _, metaDataObj := range metaSlice {
-		MetaSlice = append(MetaSlice, ExternalData{metaDataObj.Name, Info{metaDataObj.Size, metaDataObj.Topics, metaDataObj.Description, metaDataObj.Created_At, metaDataObj.Updated_At}})
-	}
-	return MetaSlice, nil
-}
-
-// loadMetaFromFile
-//
-// Opens and processes the metadata from info.json and returns a
-// slice of MetaData structs.
-func loadMetaFromFile() ([]MetaData, error) {
-	SiteData := DataStuff{}
-	fsys := os.DirFS(websites)
-	file1, err := fs.ReadFile(fsys, "info.json")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read from file: %w", err)
-	}
-
-	err = json.Unmarshal(file1, &SiteData)
-	if err != nil {
-		return nil, fmt.Errorf("could not decode file: %w", err)
-	}
-
-	return SiteData.Data, nil
-}
-
-// UpdateSiteMetaData
-//
-// Compares local copy of metadata against external data from Gitea API.
-// Should update all fields except size and updated_at fields automatically.
-func UpdateSiteMetaData() error {
-	// file, err := os.OpenFile(websites+"/info.json", os.O_RDWR, 0755)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// defer file.Close()
-	// networkData := DataStuff{}
-	// fileData, err := SendSiteList()
-	// if err != nil {
-	// 	return fmt.Errorf("could not update site list:  %w", err)
-	// }
-	// fmt.Printf("fileData: %v\n", fileData)
-
-	// networkBytes, err := getMetaFromGitea()
-	// if err != nil {
-	// 	return fmt.Errorf("could not update site data: %w", err)
-	// }
-
-	// err = json.Unmarshal(networkBytes, &networkData)
-	// if err != nil {
-	// 	return fmt.Errorf("could not read network data to memory: %w", err)
-	// }
-	// fmt.Printf("networkData: %s\n", networkData)
-
-	// // for _, localSite := range fileData {
-	// // 	for _, networkSite := range networkData.Data {
-	// // 		if localSite.Domain == networkSite.Name {
-	// // 			localSite.Description = networkSite.Description
-	// // 			localSite.Topics = networkSite.Topics
-	// // 			if localSite.Updated_At != networkSite.Updated_At || localSite.Size != networkSite.Size {
-	// // 				localSite.IsCurrent = false
-	// // 			}
-	// // 		}
-	// // 	}
-	// // }
-
-	// toWrite, err := json.Marshal(&fileData)
-	// if err != nil {
-	// 	return fmt.Errorf("could not update json: %w", err)
-	// }
-	// fmt.Printf("toWrite: %s\n", toWrite)
-	// file.Write((toWrite))
-
-	return nil
-}
-
-// createSiteMetaData
-//
-// Creates info.json and writes the content of the Gitea API call response
-func createSiteMetaData() error {
-	metaSlice := DataStuff{}
-	file, err := os.OpenFile(websites+"/info.json", os.O_CREATE, 0755)
-	if err != nil {
-		return fmt.Errorf("something went wrong opening info file: %w", err)
-	}
-	defer file.Close()
-	metaReader, err := getMetaFromGitea()
-	if err != nil {
-		return fmt.Errorf("could not get the data from Gitea: %w", err)
-	}
-	err = json.Unmarshal(metaReader, &metaSlice)
-	if err != nil {
-		return fmt.Errorf("could not unmarshal in create: %w", err)
-	}
-
-	condensedMeta, err := json.Marshal(&metaSlice)
-	if err != nil {
-		return fmt.Errorf("could not marshal in create: %w", err)
-	}
-
-	_, err = file.Write(condensedMeta)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// getMetaFromGitea
-//
-// Returns a bufio.Reader of the response from Gitea
 func getMetaFromGitea() ([]byte, error) {
 	client := http.DefaultClient
-	res, err := client.Get("http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200")
+	res, err := client.Get("http://localhost:3000/api/v1/repos/search?uid=5&limit=200")
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to API. Make sure you are connected to the network: %w", err)
 	}
 
-	// reader := bufio.NewReader(res.Body)
 	bodyContent, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 	return bodyContent, nil
+
 }
 
-// SendSiteList
-//
-// Returns a slice of WebsiteInfo structs containing information
-// regarding all the websites in the website folder including
-// websites not hosted on Gitea. This allows for an accurate
-// representation of the websites located on the user's local
-// system.
-func SendSiteList() ([]WebsiteInfo, error) {
-	externalSiteList := []string{}
-	localWebsitesDir := util.RootDir{Root: util.GetOSPaths().Websites}
-	localWebsitesContents := localWebsitesDir.ListBuilder()
-	websiteMetaData, err := GetSiteMetaData()
+func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
+	var processedMetaData DataStuff
+	var processedWebsiteInfo []WebsiteInfo
+
+	err := json.Unmarshal(metaBytes, &processedMetaData)
 	if err != nil {
-		return nil, fmt.Errorf("did not get metadata: %w", err)
 	}
-	websiteInfoSlice := []WebsiteInfo{}
-	for _, website := range websiteMetaData {
-		filePath := util.GetOSPaths().Websites + "/" + website.Name
-		externalSiteList = append(externalSiteList, website.Name)
+
+	for _, metaData := range processedMetaData.Data {
+		filePath := util.GetOSPaths().Websites + "/" + metaData.Domain
 		index := ""
 		_, err := os.Stat(filePath)
 		if err == nil {
@@ -221,34 +75,108 @@ func SendSiteList() ([]WebsiteInfo, error) {
 				index = path + "/" + ent.Name()
 			})
 		}
-		singlePage := WebsiteInfo{}
-		// singlePage.Installed = slices.Contains(localWebsitesContents, website.Name)
-		// if singlePage.Installed {
-		singlePage.IndexPath = index
-		// 	singlePage.IsCurrent = IsSiteCurrent()
-		// } else {
-		// 	singlePage.IsCurrent = false
-		// }
-		// singlePage.IsOrphan = false
-		if slices.Contains(localWebsitesContents, website.Name) {
-			if IsSiteCurrent() {
-				singlePage.State = "installed"
-			} else {
-				singlePage.State = "update_needed"
-			}
-		} else {
-			singlePage.State = "not_installed"
+		siteData := WebsiteInfo{
+			metaData.Domain,
+			index,
+			"not_installed",
+			metaData.Info,
 		}
 
-		singlePage.Domain = website.Name
-		singlePage.Info = website.Meta
+		processedWebsiteInfo = append(processedWebsiteInfo, siteData)
+	}
+	return processedWebsiteInfo, nil
+}
 
-		websiteInfoSlice = append(websiteInfoSlice, singlePage)
+func createLocalMeta() error {
+	metaBytes, err := getMetaFromGitea()
+	if err != nil {
+		return err
+	}
 
+	processedWebInfo, err := processMetaBytesFromGitea(metaBytes)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(websites+"/info.json", os.O_CREATE, 0755)
+	if err != nil {
+		return err
+	}
+
+	toWrite, err := json.Marshal(processedWebInfo)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(toWrite)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func loadMetaFromFile() ([]WebsiteInfo, error) {
+	var localMeta []WebsiteInfo
+	file, err := os.ReadFile(websites + "/info.json")
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := createLocalMeta()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	err = json.Unmarshal(file, &localMeta)
+	if err != nil {
+		return nil, fmt.Errorf("fromFile: %w", err)
+	}
+
+	return localMeta, nil
+}
+
+func BuildWebsiteList() ([]WebsiteInfo, error) {
+	// var websiteInfoList []WebsiteInfo
+	localWebsitesDir := util.RootDir{Root: websites}
+	localWebsitesContents := localWebsitesDir.ListBuilder()
+
+	localData, err := loadMetaFromFile()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = getMetaFromGitea()
+	if err != nil {
+		goto offline
+	}
+
+	fmt.Printf("localData: %v\n", localData)
+
+offline:
+	for i, website := range localData {
+		if website.Topics == nil {
+			localData[i].Topics = []string{}
+		}
+		if slices.Contains(localWebsitesContents, website.Domain) {
+			localData[i].State = "installed"
+		}
+	}
+	return localData, nil
+}
+
+func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
+	var classSites []string
+	localWebsitesDir := util.RootDir{Root: websites}
+
+	localWebsitesContents := localWebsitesDir.ListBuilder()
+	for _, external := range siteList {
+		classSites = append(classSites, external.Domain)
 	}
 
 	for _, dirent := range localWebsitesContents {
-		if !slices.Contains(externalSiteList, dirent) {
+		if !slices.Contains(classSites, dirent) {
 			orphanMeta := Info{}
 			fileInfo, err := os.Stat(util.GetOSPaths().Websites + "/" + dirent)
 			if err == nil {
@@ -272,55 +200,55 @@ func SendSiteList() ([]WebsiteInfo, error) {
 				"orphan",
 				orphanMeta,
 			}
-			websiteInfoSlice = append(websiteInfoSlice, orphanedSiteInfo)
-
+			siteList = append(siteList, orphanedSiteInfo)
 		}
 	}
+	return siteList, nil
 
-	return websiteInfoSlice, nil
 }
 
-func IsOrphanSite(local ExternalData) bool {
-	localWebsitesDir := util.RootDir{Root: util.GetOSPaths().Websites}
-	localWebsitesContents := localWebsitesDir.ListBuilder()
-	networkSites, err := loadMetaFromFile()
+func SendAllSites() ([]WebsiteInfo, error) {
+	external, err := BuildWebsiteList()
 	if err != nil {
-		return true
+		return nil, err
 	}
-	for _, local := range localWebsitesContents {
-		for _, network := range networkSites {
-			if local == network.Name {
-				return false
-			}
-		}
+
+	allSites, err := processOrphanSites(external)
+	if err != nil {
+		return nil, err
 	}
-	return true
+
+	return allSites, nil
 }
 
-func IsSiteCurrent() bool {
-	data := DataStuff{}
-
+func UpdateSiteMetaData() error {
 	local, err := loadMetaFromFile()
 	if err != nil {
-		return true
-	}
-	reader, err := getMetaFromGitea()
-	if err != nil {
-		return true
+		return err
 	}
 
-	err = json.Unmarshal(reader, &data)
+	external, err := getMetaFromGitea()
 	if err != nil {
-		return true
+		return err
 	}
 
-	for _, localMeta := range local {
-		for _, extMeta := range data.Data {
-			if localMeta.Name == extMeta.Name {
-				return localMeta.Updated_At.Equal(extMeta.Updated_At)
+	processedExt, err := processMetaBytesFromGitea(external)
+	if err != nil {
+		return err
+	}
+
+	if len(local) == len(processedExt) {
+		for i, localSite := range local {
+			for _, externalSite := range processedExt {
+				if localSite.Domain == externalSite.Domain {
+					local[i].Description = externalSite.Description
+					local[i].Topics = externalSite.Topics
+					if localSite.Size != externalSite.Size || localSite.Updated_At != externalSite.Updated_At {
+						local[i].State = "update_needed"
+					}
+				}
 			}
 		}
 	}
-
-	return true
+	return nil
 }
