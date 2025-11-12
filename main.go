@@ -269,7 +269,7 @@ func main() {
 	})
 
 	api.GET("/links", func(ctx *gin.Context) {
-		websiteInfoSlice, err := external.SendSiteList()
+		websiteInfoSlice, err := external.SendAllSites()
 		if err != nil {
 			ctx.String(500, err.Error())
 			return

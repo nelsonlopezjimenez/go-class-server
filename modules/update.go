@@ -4,7 +4,8 @@ package CIS
 import (
 	"fmt"
 	command "localhost/CIS/modules/cmd"
-	"localhost/CIS/modules/external"
+
+	// "localhost/CIS/modules/external"
 	"localhost/CIS/modules/util"
 	"log"
 	"net"
@@ -46,11 +47,11 @@ var ipData IPInfo
 func (np NetworkPinger) Update() {
 	ipData = GetLocalIP()
 	if ipData.isConnected {
-		err := external.UpdateSiteMetaData()
-		if err != nil {
-			updateLogger.Println(err)
-		}
-		err = updateClassResources()
+		// err := external.UpdateSiteMetaData()
+		// if err != nil {
+		// 	updateLogger.Println(err)
+		// }
+		err := updateClassResources()
 		if err != nil {
 			fmt.Println("I'm an error!")
 			updateLogger.Println(err)
@@ -64,12 +65,12 @@ func (np NetworkPinger) Update() {
 	checkInterval := time.NewTicker(time.Duration(np.Timeout) * interval)
 	hasCheckedDeps := false
 	if ipData.isConnected {
-		err := external.UpdateSiteMetaData()
-		if err != nil {
-			updateLogger.Println(err)
-		}
+		// err := external.UpdateSiteMetaData()
+		// if err != nil {
+		// 	updateLogger.Println(err)
+		// }
 		checkForDependencies(np.Url)
-		err = updateClassResources()
+		err := updateClassResources()
 		if err != nil {
 			updateLogger.Println(err)
 		}
@@ -81,7 +82,7 @@ func (np NetworkPinger) Update() {
 		if ipData.isConnected {
 			fmt.Println(time.Now())
 			if hasCheckedDeps {
-				external.UpdateSiteMetaData()
+				// external.UpdateSiteMetaData()
 				err := updateClassResources()
 				if err != nil {
 					updateLogger.Println(err)
