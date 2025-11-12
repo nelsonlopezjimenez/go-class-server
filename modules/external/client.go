@@ -44,7 +44,7 @@ var websites string = util.GetOSPaths().Websites
 
 func getMetaFromGitea() ([]byte, error) {
 	client := http.DefaultClient
-	res, err := client.Get("http://localhost:3000/api/v1/repos/search?uid=5&limit=200")
+	res, err := client.Get("http://192.168.1.47:3000/api/v1/repos/search?uid=5&limit=200")
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to API. Make sure you are connected to the network: %w", err)
 	}
