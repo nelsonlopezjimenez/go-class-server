@@ -8,6 +8,7 @@ import (
 	"localhost/CIS/modules/util"
 	"net/http"
 	"os"
+	"reflect"
 	"slices"
 	"time"
 )
@@ -44,7 +45,7 @@ var websites string = util.GetOSPaths().Websites
 
 func getMetaFromGitea() ([]byte, error) {
 	client := http.DefaultClient
-	res, err := client.Get("http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200")
+	res, err := client.Get("http://localhost:3000/api/v1/repos/search?uid=5&limit=200")
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to API. Make sure you are connected to the network: %w", err)
 	}
@@ -58,7 +59,6 @@ func getMetaFromGitea() ([]byte, error) {
 }
 
 func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
-	//! I believe the metadata issue is found in this function
 	var processedMetaData DataStuff
 	var processedWebsiteInfo []WebsiteInfo
 
@@ -67,7 +67,6 @@ func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
 	}
 
 	for i, metaData := range processedMetaData.Data {
-		fmt.Printf("metaData: %v\n", metaData)
 		filePath := util.GetOSPaths().Websites + "/" + metaData.Name
 		index := ""
 		_, err := os.Stat(filePath)
@@ -119,8 +118,6 @@ func createLocalMeta() error {
 }
 
 func loadMetaFromFile() ([]WebsiteInfo, error) {
-	//! No data is being unmarshaled into localMeta
-	// which makes sense because the json file has no data
 	var localMeta []WebsiteInfo
 	file, err := os.ReadFile(websites + "/info.json")
 	if err != nil {
@@ -138,7 +135,6 @@ func loadMetaFromFile() ([]WebsiteInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fromFile: %w", err)
 	}
-	fmt.Printf("localMeta: %v\n", localMeta)
 	return localMeta, nil
 }
 
@@ -151,7 +147,6 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("localData: %v\n", localData)
 	_, err = getMetaFromGitea()
 	if err != nil {
 		goto offline
@@ -163,14 +158,19 @@ offline:
 			localData[i].Topics = []string{}
 		}
 		if slices.Contains(localWebsitesContents, website.Domain) {
-			localData[i].State = "installed"
+			fmt.Printf("website.State: %v\n", website.State)
+			if localData[i].State == "update_needed" {
+				fmt.Println("I need updated")
+				localData[i].State = "update_needed"
+			} else {
+				localData[i].State = "installed"
+			}
 		}
 	}
 	return localData, nil
 }
 
 func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
-	//! The problem is actually found here with classSites not being populated
 	var classSites []string
 	localWebsitesDir := util.RootDir{Root: websites}
 
@@ -178,9 +178,6 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 	for _, external := range siteList {
 		classSites = append(classSites, external.Domain)
 	}
-	fmt.Printf("localWebsitesDir: %v\n", localWebsitesContents)
-	fmt.Printf("classSites: %v\n", classSites)
-	fmt.Printf("siteList: %v\n", siteList)
 
 	for _, dirent := range localWebsitesContents {
 		if !slices.Contains(classSites, dirent) {
@@ -219,7 +216,6 @@ func SendAllSites() ([]WebsiteInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("external form  SAS: %v\n", external)
 
 	allSites, err := processOrphanSites(external)
 	if err != nil {
@@ -230,36 +226,120 @@ func SendAllSites() ([]WebsiteInfo, error) {
 }
 
 func UpdateSiteMetaData() error {
+	// var updatedList []WebsiteInfo
+
+	local, err := loadMetaFromFile()
+	if err != nil {
+		return err
+	}
+	file, err := os.OpenFile(websites+"/info.json", os.O_TRUNC|os.O_CREATE, 0755)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
 	// allSites, err := SendAllSites(); if err != nil {
 	// 	return err
 	// }
-	// local, err := loadMetaFromFile()
-	// if err != nil {
-	// 	return err
-	// }
 
-	// external, err := getMetaFromGitea()
-	// if err != nil {
-	// 	return err
-	// }
+	external, err := getMetaFromGitea()
+	if err != nil {
+		return err
+	}
 
-	// processedExt, err := processMetaBytesFromGitea(external)
-	// if err != nil {
-	// 	return err
-	// }
+	processedExt, err := processMetaBytesFromGitea(external)
+	if err != nil {
+		return err
+	}
 
-	// if len(local) == len(processedExt) {
-	// 	for i, localSite := range local {
-	// 		for _, externalSite := range processedExt {
-	// 			if localSite.Domain == externalSite.Domain {
-	// 				local[i].Description = externalSite.Description
-	// 				local[i].Topics = externalSite.Topics
-	// 				if localSite.Size != externalSite.Size || localSite.Updated_At != externalSite.Updated_At {
-	// 					local[i].State = "update_needed"
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	localDomainList, externalDomainList := listOfDomains(local, processedExt)
+
+	toDelete := []string{}
+
+	for _, name := range localDomainList {
+		if !slices.Contains(externalDomainList, name) {
+			toDelete = append(toDelete, name)
+		}
+	}
+
+	if len(toDelete) > 0 {
+		for _, name := range toDelete {
+			for i, site := range local {
+				if site.Domain == name {
+					local = slices.Delete(local, i, i+1)
+					fmt.Printf("local: %v\n", local)
+				}
+			}
+		}
+	}
+
+	toAdd := []string{}
+
+	for _, name := range externalDomainList {
+		if !slices.Contains(localDomainList, name) {
+			toAdd = append(toAdd, name)
+		}
+	}
+
+	if len(toAdd) > 0 {
+		for _, name := range toAdd {
+			for i, site := range processedExt {
+				if site.Domain == name {
+					local = append(local, processedExt[i])
+					fmt.Printf("local: %v\n", local)
+				}
+			}
+		}
+	}
+
+	for i, localSite := range local {
+		for _, externalSite := range processedExt {
+			if !reflect.DeepEqual(localSite, externalSite) {
+				if localSite.Domain == externalSite.Domain {
+					if localSite.Size != externalSite.Size || localSite.Updated_At != externalSite.Updated_At {
+						local[i].State = "update_needed"
+					}
+					local[i].Description = externalSite.Description
+					local[i].Info = externalSite.Info
+					fmt.Println(local[i])
+					break
+				} else {
+					continue
+				}
+
+			} else {
+				break
+			}
+
+		}
+
+	}
+
+	toWrite, err := json.Marshal(local)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(toWrite))
+
+	_, err = file.Write(toWrite)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func listOfDomains(localSlice []WebsiteInfo, externalSlice []WebsiteInfo) ([]string, []string) {
+	var local []string
+	var external []string
+
+	for _, site := range localSlice {
+		local = append(local, site.Domain)
+	}
+
+	for _, site := range externalSlice {
+		external = append(external, site.Domain)
+	}
+
+	return local, external
 }

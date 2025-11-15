@@ -19,17 +19,13 @@ import (
 	"localhost/CIS/modules/util"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 // Defines the port the server binds to
 var (
 	port = flag.String("p", "22022", "Sets the port for the server. Default is 22022.")
 	dev  = flag.Bool("dev", false, "Runs the server in dev mode. Displays debug messages. Default is false.")
-)
-
-var (
-	releaseVersion = "v1.4.0"
-	releaseDate    = "10/30/2025"
 )
 
 var updateIP string
@@ -42,6 +38,14 @@ func usage() {
 
 // The main package must contain a main function which will be executed on run
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	releaseVersion := os.Getenv("RELEASE_VERSION")
+	releaseDate := os.Getenv("RELEASE_DATE")
+
 	// Here we parse the flags in case of user defined options
 	flag.Usage = usage
 	flag.Parse()
@@ -177,8 +181,7 @@ func main() {
 			serverLog.Panicln("There was an error getting the mardown file:", err)
 		}
 
-		// Parses the requested file from markdown to HTML
-		// Sends the parsed HTML to the client as JSON data
+		//sends raw MD as string to be parsed on the frontend
 		ctx.JSON(200, string(file))
 	})
 
@@ -279,6 +282,15 @@ func main() {
 		ctx.JSON(200, websiteInfoSlice)
 
 	})
+	api.GET("/update", func(ctx *gin.Context) {
+		err := external.UpdateSiteMetaData()
+		if err != nil {
+			ctx.JSON(500, err.Error())
+			return
+		}
+
+		ctx.String(200, "No error here")
+	})
 
 	api.GET("/git/:command/:submodule", func(ctx *gin.Context) {
 		type ReturnOutput map[string]string
@@ -295,7 +307,8 @@ func main() {
 			}
 			consoleOutput = string(consoleOutputBytes)
 		case "install":
-			consoleOutputBytes, err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/"+submodule+".git", submodule)
+			// consoleOutputBytes, err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/"+submodule+".git", submodule)
+			consoleOutputBytes, err := CIS.GitClone(filePath.Websites, "http://localhost:3000/ClassroomResources/"+submodule+".git", submodule)
 			if err != nil {
 				fmt.Println("[main]", err)
 
