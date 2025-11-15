@@ -19,7 +19,7 @@ import (
 	"localhost/CIS/modules/util"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv"
 )
 
 // Defines the port the server binds to
