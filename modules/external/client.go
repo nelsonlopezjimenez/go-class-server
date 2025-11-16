@@ -25,11 +25,6 @@ type MetaData struct {
 	Info
 }
 
-type ExternalData struct {
-	Name string
-	Meta Info
-}
-
 type DataStuff struct {
 	Data []MetaData `json:"data"`
 }
@@ -43,7 +38,12 @@ type WebsiteInfo struct {
 
 var websites string = util.GetOSPaths().Websites
 
+// getMetaFromGitea
+//
+// Sends a GET request to Gitea's /api/v1/repos route and returns a []byte
+// of the body's content.
 func getMetaFromGitea() ([]byte, error) {
+	fmt.Printf("%v", os.Getenv("IS_DEV"))
 	client := http.DefaultClient
 	res, err := client.Get("http://localhost:3000/api/v1/repos/search?uid=5&limit=200")
 	if err != nil {
@@ -58,6 +58,9 @@ func getMetaFromGitea() ([]byte, error) {
 
 }
 
+// processedMetaBytesFromGitea
+//
+// Takes the []byte from getMetaFromGitea and parses it into []WebsiteInfo.
 func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
 	var processedMetaData DataStuff
 	var processedWebsiteInfo []WebsiteInfo
@@ -66,28 +69,18 @@ func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
 	if err != nil {
 	}
 
-	for i, metaData := range processedMetaData.Data {
-		filePath := util.GetOSPaths().Websites + "/" + metaData.Name
-		index := ""
-		_, err := os.Stat(filePath)
-		if err == nil {
-			websiteRoot := util.MakeRootDir(filePath)
-			websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
-				index = path + "/" + ent.Name()
-			})
-		}
-		siteData := WebsiteInfo{
-			processedMetaData.Data[i].Name,
-			index,
-			"not_installed",
-			processedMetaData.Data[i].Info,
-		}
+	for _, metaData := range processedMetaData.Data {
+		siteData := makeWebsiteInfo(metaData)
 
 		processedWebsiteInfo = append(processedWebsiteInfo, siteData)
 	}
 	return processedWebsiteInfo, nil
 }
 
+// createLocalMeta
+//
+// If there is no info.json file located in the websites folder,
+// this fn will create it and save the website metadata to file.
 func createLocalMeta() error {
 	metaBytes, err := getMetaFromGitea()
 	if err != nil {
@@ -117,9 +110,15 @@ func createLocalMeta() error {
 	return nil
 }
 
+// loadMetaFromFile
+//
+// Checks to see if info.json exists. If not, it calls
+// createLocalMeta. Otherwise, it opens the file and unmarshals
+// the json into []WebsiteInfo for further use.
 func loadMetaFromFile() ([]WebsiteInfo, error) {
 	var localMeta []WebsiteInfo
-	file, err := os.ReadFile(websites + "/info.json")
+
+	_, err := os.Stat(websites + "/info.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			err := createLocalMeta()
@@ -129,6 +128,11 @@ func loadMetaFromFile() ([]WebsiteInfo, error) {
 		} else {
 			return nil, err
 		}
+	}
+
+	file, err := os.ReadFile(websites + "/info.json")
+	if err != nil {
+		return nil, err
 	}
 
 	err = json.Unmarshal(file, &localMeta)
@@ -158,9 +162,7 @@ offline:
 			localData[i].Topics = []string{}
 		}
 		if slices.Contains(localWebsitesContents, website.Domain) {
-			fmt.Printf("website.State: %v\n", website.State)
 			if localData[i].State == "update_needed" {
-				fmt.Println("I need updated")
 				localData[i].State = "update_needed"
 			} else {
 				localData[i].State = "installed"
@@ -170,6 +172,12 @@ offline:
 	return localData, nil
 }
 
+// processOrphanSites
+//
+// creates a list of domains available from Gitea and compares it to the contents
+// of the websites folder. If it finds directories in the websites folder that does
+// not match the list available on Gitea, it creates orphan WebsiteInfo and appends
+// it to the current website list sent to the front end.
 func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 	var classSites []string
 	localWebsitesDir := util.RootDir{Root: websites}
@@ -211,6 +219,10 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 
 }
 
+// SendAllSites
+//
+// Collects all the site data and returns a []WebsiteInfo of
+// All available sites.
 func SendAllSites() ([]WebsiteInfo, error) {
 	external, err := BuildWebsiteList()
 	if err != nil {
@@ -225,6 +237,10 @@ func SendAllSites() ([]WebsiteInfo, error) {
 	return allSites, nil
 }
 
+// UpdateSiteMetaData
+// Checks the local list against a fresh copy of the metadata
+// from Gitea. Updates info.json and sets the state of any entry
+// to "need_update" as necessary.
 func UpdateSiteMetaData() error {
 	// var updatedList []WebsiteInfo
 
@@ -267,7 +283,6 @@ func UpdateSiteMetaData() error {
 			for i, site := range local {
 				if site.Domain == name {
 					local = slices.Delete(local, i, i+1)
-					fmt.Printf("local: %v\n", local)
 				}
 			}
 		}
@@ -286,7 +301,6 @@ func UpdateSiteMetaData() error {
 			for i, site := range processedExt {
 				if site.Domain == name {
 					local = append(local, processedExt[i])
-					fmt.Printf("local: %v\n", local)
 				}
 			}
 		}
@@ -300,8 +314,13 @@ func UpdateSiteMetaData() error {
 						local[i].State = "update_needed"
 					}
 					local[i].Description = externalSite.Description
-					local[i].Info = externalSite.Info
-					fmt.Println(local[i])
+					local[i].Info = Info{
+						localSite.Size,
+						externalSite.Topics,
+						externalSite.Description,
+						externalSite.Created_At,
+						localSite.Updated_At,
+					}
 					break
 				} else {
 					continue
@@ -319,8 +338,6 @@ func UpdateSiteMetaData() error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(string(toWrite))
 
 	_, err = file.Write(toWrite)
 	if err != nil {
@@ -342,4 +359,81 @@ func listOfDomains(localSlice []WebsiteInfo, externalSlice []WebsiteInfo) ([]str
 	}
 
 	return local, external
+}
+
+func getSingleSiteMeta(domain string) (WebsiteInfo, error) {
+	singleSiteInfo := MetaData{}
+	client := http.DefaultClient
+	res, err := client.Get("http://localhost:3000/api/v1/repos/ClassroomResources/" + domain)
+	if err != nil {
+		return WebsiteInfo{}, fmt.Errorf("unable to connect to API. Make sure you are connected to the network: %w", err)
+	}
+
+	bodyContent, err := io.ReadAll(res.Body)
+	if err != nil {
+		return WebsiteInfo{}, fmt.Errorf("could not read body: %w", err)
+	}
+
+	err = json.Unmarshal(bodyContent, &singleSiteInfo)
+	if err != nil {
+		return WebsiteInfo{}, err
+	}
+
+	return makeWebsiteInfo(singleSiteInfo), nil
+}
+
+func UpdateSingleInfo(domainUpdated string) error {
+	fullLocalList, err := loadMetaFromFile()
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(websites+"/info.json", os.O_TRUNC|os.O_CREATE, 0755)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	singleInfoToUpdate, err := getSingleSiteMeta(domainUpdated)
+	if err != nil {
+		return err
+	}
+
+	for i, localToUpdate := range fullLocalList {
+		if localToUpdate.Domain == domainUpdated {
+			fullLocalList[i] = singleInfoToUpdate
+		}
+	}
+
+	toWrite, err := json.Marshal(fullLocalList)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(toWrite)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func makeWebsiteInfo(meta MetaData) WebsiteInfo {
+
+	filePath := util.GetOSPaths().Websites + "/" + meta.Name
+	index := ""
+	_, err := os.Stat(filePath)
+	if err == nil {
+		websiteRoot := util.MakeRootDir(filePath)
+		websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
+			index = path + "/" + ent.Name()
+		})
+	}
+	siteData := WebsiteInfo{
+		meta.Name,
+		index,
+		"not_installed",
+		meta.Info,
+	}
+	return siteData
 }

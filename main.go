@@ -19,7 +19,6 @@ import (
 	"localhost/CIS/modules/util"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/joho/godotenv"
 )
 
 // Defines the port the server binds to
@@ -36,14 +35,26 @@ func usage() {
 	fmt.Println("usage: ClassServer -flag options")
 }
 
+// func loadEnv(key string) string {
+
+// }
+// var EnvDefaults = make(map[string]string)
+
 // The main package must contain a main function which will be executed on run
 func main() {
-	err := godotenv.Load()
+	err := util.RunMigrateScript()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		fmt.Println("error:", err)
 	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	os.Setenv("")
+	// 	// log.Fatal("Error loading .env file")
+	// }
+	// os.LookupEnv()
 
-	releaseVersion := os.Getenv("RELEASE_VERSION")
+	releaseVersion := "dev"
+	releaseVersion = os.Getenv("RELEASE_VERSION")
 	releaseDate := os.Getenv("RELEASE_DATE")
 
 	// Here we parse the flags in case of user defined options
@@ -301,6 +312,11 @@ func main() {
 		switch command {
 		case "update":
 			consoleOutputBytes, err := CIS.GitPull(filePath.Websites + "/" + submodule)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			err = external.UpdateSingleInfo(submodule)
 			if err != nil {
 				ctx.JSON(500, err.Error())
 				return
