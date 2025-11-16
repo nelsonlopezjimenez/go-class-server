@@ -60,13 +60,13 @@ func main() {
 	serverLog.Println("CIS Class Server", releaseVersion, "released on", releaseDate)
 	if isDev {
 		serverLog.Println("Running in dev mode.")
-		updateIP = "http://localhost:3000"
+		updateIP = util.LoadEnv("UPDATE_IP")
 		serverLog.Println("The update  URL is:", updateIP)
 	}
 
 	if !isDev {
 		gin.SetMode(gin.ReleaseMode)
-		updateIP = "http://192.168.1.28:3000"
+		updateIP = util.LoadEnv("UPDATE_IP")
 		serverLog.Println("The update  URL is:", updateIP)
 	}
 
@@ -316,8 +316,7 @@ func main() {
 			}
 			consoleOutput = string(consoleOutputBytes)
 		case "install":
-			// consoleOutputBytes, err := CIS.GitClone(filePath.Websites, "http://192.168.1.47:3000/OfflineWebsites/"+submodule+".git", submodule)
-			consoleOutputBytes, err := CIS.GitClone(filePath.Websites, "http://localhost:3000/ClassroomResources/"+submodule+".git", submodule)
+			consoleOutputBytes, err := CIS.GitClone(filePath.Websites, util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
 			if err != nil {
 				fmt.Println("[main]", err)
 

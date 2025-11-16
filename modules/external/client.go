@@ -45,7 +45,7 @@ var websites string = util.GetOSPaths().Websites
 func getMetaFromGitea() ([]byte, error) {
 	fmt.Printf("%v", os.Getenv("IS_DEV"))
 	client := http.DefaultClient
-	res, err := client.Get("http://localhost:3000/api/v1/repos/search?uid=5&limit=200")
+	res, err := client.Get(util.LoadEnv("WEBSITES_GITEA_ADDR"))
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to API. Make sure you are connected to the network: %w", err)
 	}
@@ -364,7 +364,7 @@ func listOfDomains(localSlice []WebsiteInfo, externalSlice []WebsiteInfo) ([]str
 func getSingleSiteMeta(domain string) (WebsiteInfo, error) {
 	singleSiteInfo := MetaData{}
 	client := http.DefaultClient
-	res, err := client.Get("http://localhost:3000/api/v1/repos/ClassroomResources/" + domain)
+	res, err := client.Get(util.LoadEnv("WEBSITES_REPO_ADDR") + domain)
 	if err != nil {
 		return WebsiteInfo{}, fmt.Errorf("unable to connect to API. Make sure you are connected to the network: %w", err)
 	}
