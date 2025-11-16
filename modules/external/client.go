@@ -143,7 +143,6 @@ func loadMetaFromFile() ([]WebsiteInfo, error) {
 }
 
 func BuildWebsiteList() ([]WebsiteInfo, error) {
-	// var websiteInfoList []WebsiteInfo
 	localWebsitesDir := util.RootDir{Root: websites}
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 
@@ -154,6 +153,11 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 	_, err = getMetaFromGitea()
 	if err != nil {
 		goto offline
+	}
+
+	err = UpdateSiteMetaData()
+	if err != nil {
+		return nil, err
 	}
 
 offline:
@@ -242,8 +246,6 @@ func SendAllSites() ([]WebsiteInfo, error) {
 // from Gitea. Updates info.json and sets the state of any entry
 // to "need_update" as necessary.
 func UpdateSiteMetaData() error {
-	// var updatedList []WebsiteInfo
-
 	local, err := loadMetaFromFile()
 	if err != nil {
 		return err
@@ -253,10 +255,6 @@ func UpdateSiteMetaData() error {
 		return err
 	}
 	defer file.Close()
-
-	// allSites, err := SendAllSites(); if err != nil {
-	// 	return err
-	// }
 
 	external, err := getMetaFromGitea()
 	if err != nil {

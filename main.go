@@ -7,6 +7,7 @@ package main
 // Every package that is declared in the imports must be used
 import (
 	// "bytes"
+
 	"flag"
 	"fmt"
 	"io/fs"
@@ -156,7 +157,6 @@ func main() {
 	})
 
 	server.GET("/:allOther/*any", func(ctx *gin.Context) {
-		// ctx.Redirect(301, "/")
 		index, err := util.GetIndex()
 		if err != nil {
 			serverLog.Panicln(err)
@@ -286,15 +286,6 @@ func main() {
 		ctx.JSON(200, websiteInfoSlice)
 
 	})
-	api.GET("/update", func(ctx *gin.Context) {
-		err := external.UpdateSiteMetaData()
-		if err != nil {
-			ctx.JSON(500, err.Error())
-			return
-		}
-
-		ctx.String(200, "No error here")
-	})
 
 	api.GET("/git/:command/:submodule", func(ctx *gin.Context) {
 		type ReturnOutput map[string]string
@@ -335,12 +326,6 @@ func main() {
 			return
 		}
 
-		// gitOut, gitErr := CIS.GetWebsiteModule(submodule)
-		// 	if gitErr != nil {
-		// 		ctx.JSON(500, gitErr.Error())
-		// 		// serverLog.Println("Error Downloading website:", gitErr.Error())
-		// 		return
-		// 	}
 		ctx.JSON(200, ReturnOutput{"output": string(consoleOutput)})
 	})
 

@@ -26,3 +26,6 @@ Host: localhost:22022
 ### delete chakra-ui
 GET /api/git/delete/old.mozilla.org HTTP/1.1
 Host: localhost:22022
+
+### update test
+curl --location --request GET 'http://localhost:22022/api/update' \
