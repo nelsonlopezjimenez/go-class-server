@@ -10,3 +10,5 @@ CANVAS_FILE_CACHE
 ./build.sh
 modifyHTML.sh
 build.sh
+.env
+.env.bak
