@@ -41,19 +41,13 @@ func usage() {
 func main() {
 	godotenv.Load() //? load .env file if it exists
 
-
-	go func(){
+	go func() {
 
 		err := util.RunMigrateScript()
 		if err != nil {
 			fmt.Println("error:", err)
 		}
-		if err == nil {
-			fmt.Println("run migrate rand")
-		}
 	}()
-
-
 
 	//! All variables that could be modified by .env should use
 	//! util.LoadEnv(key string) and not try to access the environment directly

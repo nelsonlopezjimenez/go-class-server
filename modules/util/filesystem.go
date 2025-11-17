@@ -128,7 +128,6 @@ func RunMigrateScript() error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(tmpFile.Name())
 
 	err = os.RemoveAll(tmpDir)
 	if err != nil {
