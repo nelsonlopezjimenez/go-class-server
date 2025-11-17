@@ -1,7 +1,7 @@
 #!/usr/bin/sh
 
 
-
+rm info.json
 rm -d */;                                       #removes all empty directories
 rm -rf .git;                                    # removes version control from folder
 rm .gitmodules;                                 #removes the .gitmodules file creates by superproject
