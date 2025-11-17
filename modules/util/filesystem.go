@@ -124,11 +124,11 @@ func RunMigrateScript() error {
 
 	migrate := exec.Command("C:/Program Files/Git/git-bash.exe", tmpFile.Name())
 	migrate.Dir = GetOSPaths().Websites
-	err = migrate.Start()
+	err = migrate.Run()
 	if err != nil {
 		fmt.Println(err)
 	}
-	// fmt.Println(tmpFile.Name())
+	fmt.Println(tmpFile.Name())
 
 	err = os.RemoveAll(tmpDir)
 	if err != nil {

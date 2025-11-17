@@ -13,7 +13,7 @@ for i in */;                                    #start loop
         echo "submodule found. Migrating $i";
         rm -r .git --force;                             # removes version control from folder
         git init -b deleteme;                           # creates a dummy branch that will disappear once a real branch is check out
-        git remote add origin http://localhost:3000/MonkeyGoblin/$i;   #adds origin based on folder name
+        git remote add origin http://192.168.1.47:3000/websites/$i;   #adds origin based on folder name
         git fetch origin main;                          #pulls existing branches
         git checkout main -f;                           #creates main branch and checks it out
     else echo "no module found in $i";
@@ -22,6 +22,7 @@ for i in */;                                    #start loop
     fi;                                                 #This catches cases where migration did not complete because of disconnection.
     cd $OLDPWD;
 done;
+
 
 ## I tested this by alternating it with the reinit.sh script
 # I tested disconnection by interrupting the gitea process during migration then running migration a second time.
