@@ -4,7 +4,11 @@ go 1.24.3
 
 replace github.com/gin-gonic/gin => ../modules/gin-master/
 
-require github.com/gin-gonic/gin v0.0.0-00010101000000-000000000000
+require (
+	github.com/gin-gonic/gin v0.0.0-00010101000000-000000000000
+	github.com/joho/godotenv v1.3.0
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/bytedance/sonic v1.13.2 // indirect
@@ -40,7 +44,8 @@ require (
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace gopkg.in/yaml.v3 v3.0.1 => ../modules-from-go-home/gopkg.in/yaml.v3@v3.0.1
+
+replace github.com/joho/godotenv v1.3.0 => ../modules-from-go-home/github.com/joho/godotenv@v1.3.0

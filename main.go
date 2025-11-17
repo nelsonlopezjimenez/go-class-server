@@ -16,8 +16,11 @@ import (
 	"strings"
 
 	CIS "localhost/CIS/modules"
+	"localhost/CIS/modules/external"
+	"localhost/CIS/modules/util"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 // Defines the port the server binds to
@@ -26,14 +29,9 @@ var (
 	dev  = flag.Bool("dev", false, "Runs the server in dev mode. Displays debug messages. Default is false.")
 )
 
-var (
-	releaseVersion = "v1.4.0"
-	releaseDate    = "10/30/2025"
-)
-
 var updateIP string
 
-var filePath = CIS.GetOSPaths()
+var filePath = util.GetOSPaths()
 
 func usage() {
 	fmt.Println("usage: ClassServer -flag options")
@@ -41,6 +39,18 @@ func usage() {
 
 // The main package must contain a main function which will be executed on run
 func main() {
+	err := util.RunMigrateScript()
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+
+	godotenv.Load() //? load .env file if it exists
+
+	//! All variables that could be modified by .env should use
+	//! util.LoadEnv(key string) and not try to access the environment directly
+	releaseVersion := util.LoadEnv("RELEASE_VERSION")
+	releaseDate := util.LoadEnv("RELEASE_DATE")
+
 	// Here we parse the flags in case of user defined options
 	flag.Usage = usage
 	flag.Parse()
@@ -51,13 +61,13 @@ func main() {
 	serverLog.Println("CIS Class Server", releaseVersion, "released on", releaseDate)
 	if isDev {
 		serverLog.Println("Running in dev mode.")
-		updateIP = "http://localhost:3000"
+		updateIP = util.LoadEnv("UPDATE_IP")
 		serverLog.Println("The update  URL is:", updateIP)
 	}
 
 	if !isDev {
 		gin.SetMode(gin.ReleaseMode)
-		updateIP = "http://192.168.1.28:3000"
+		updateIP = util.LoadEnv("UPDATE_IP")
 		serverLog.Println("The update  URL is:", updateIP)
 	}
 
@@ -72,7 +82,7 @@ func main() {
 	server.Use(func(ctx *gin.Context) {
 		switch ctx.RemoteIP() {
 		case "::1", "127.0.0.1":
-			fmt.Println("Permitted")
+			ctx.Next()
 		default:
 			ctx.String(403, "I'm sorry. Your are not authorized to see this.")
 			ctx.Abort()
@@ -80,7 +90,7 @@ func main() {
 	})
 	api := server.Group("/api")
 	// The following line defines a static asset folder
-	fsys, err := CIS.GetFileSystemHandler()
+	fsys, err := util.GetFileSystemHandler()
 	if err != nil {
 		serverLog.Println("there was an error in the embedded fs:", err)
 	}
@@ -139,7 +149,7 @@ func main() {
 
 	server.GET("/", func(ctx *gin.Context) {
 		// route function for handling requests to the root
-		index, err := CIS.GetIndex()
+		index, err := util.GetIndex()
 		if err != nil {
 			serverLog.Panicln(err)
 		}
@@ -147,8 +157,7 @@ func main() {
 	})
 
 	server.GET("/:allOther/*any", func(ctx *gin.Context) {
-		// ctx.Redirect(301, "/")
-		index, err := CIS.GetIndex()
+		index, err := util.GetIndex()
 		if err != nil {
 			serverLog.Panicln(err)
 		}
@@ -176,8 +185,7 @@ func main() {
 			serverLog.Panicln("There was an error getting the mardown file:", err)
 		}
 
-		// Parses the requested file from markdown to HTML
-		// Sends the parsed HTML to the client as JSON data
+		//sends raw MD as string to be parsed on the frontend
 		ctx.JSON(200, string(file))
 	})
 
@@ -225,16 +233,14 @@ func main() {
 	})
 
 	api.GET("/lessons", func(ctx *gin.Context) {
-		testList := CIS.RootDir{Root: "./data/markdown/lessons"}
+		testList := util.RootDir{Root: "./data/markdown/lessons"}
 
 		testSlice := map[string][]string{}
 
-		// fmt.Println(testSlice)
 		testList.RecursiveSearch(".md", func(path string, fileName string) {
 
 			testSlice[path] = append(testSlice[path], fileName)
 		})
-		// fmt.Println(testSlice)
 		ctx.JSON(200, testSlice)
 	})
 
@@ -242,28 +248,26 @@ func main() {
 		subdir := ctx.Param("subdir")
 		lessonName := ctx.Param("lesson")
 
-		lesson := CIS.MakeLessonInfo(subdir, lessonName+".md", serverLog)
+		lesson := util.MakeLessonInfo(subdir, lessonName+".md", serverLog)
 		ctx.JSON(200, lesson)
 
 	})
 
 	api.GET("/data/lessons", func(ctx *gin.Context) {
-		lessons := []CIS.LessonInfo{}
+		lessons := []util.LessonInfo{}
 
-		lessonList := CIS.RootDir{Root: "./data/markdown/lessons"}
+		lessonList := util.RootDir{Root: "./data/markdown/lessons"}
 
 		infoSlice := map[string][]string{}
 
-		// fmt.Println(testSlice)
 		lessonList.RecursiveSearch(".md", func(path string, fileName string) {
 
 			infoSlice[path] = append(infoSlice[path], fileName)
 		})
 
 		for subdir, lessonSubdir := range infoSlice {
-			// fmt.Println(lessonSubdir)
 			for _, lessonMD := range lessonSubdir {
-				lesson := CIS.MakeLessonInfo(subdir, lessonMD, serverLog)
+				lesson := util.MakeLessonInfo(subdir, lessonMD, serverLog)
 				lessons = append(lessons, lesson)
 			}
 			ctx.JSON(200, lessons)
@@ -272,36 +276,10 @@ func main() {
 	})
 
 	api.GET("/links", func(ctx *gin.Context) {
-
-		// Remember: the property names must be UPPERCASE in order to be exported
-		// Type Outbound defines what the structure should contain.
-
-		websites := CIS.RootDir{Root: filePath.Websites}
-		websitesList := websites.ListBuilder()
-		type WebsiteInfo struct {
-			Domain    string
-			IndexPath string
-			Installed bool
-			IsCurrent bool
-		}
-		websiteInfoSlice := []WebsiteInfo{}
-		for _, item := range websitesList {
-
-			isHidden := strings.HasPrefix(item, ".")
-			if !isHidden {
-				var index string
-				currentDir := CIS.RootDir{Root: filePath.Websites + "/" + item}
-				currentDir.FindIndex(func(path string, ent fs.DirEntry) {
-					index = path + "/" + ent.Name()
-				})
-				pageUpdated := true
-				isInstalled := false
-				if index != "" {
-					isInstalled = true
-				}
-				indexStruct := WebsiteInfo{item, index, isInstalled, pageUpdated}
-				websiteInfoSlice = append(websiteInfoSlice, indexStruct)
-			}
+		websiteInfoSlice, err := external.SendAllSites()
+		if err != nil {
+			ctx.String(500, err.Error())
+			return
 		}
 
 		// Sends response  json data to the client
@@ -309,21 +287,51 @@ func main() {
 
 	})
 
-	api.GET("/git/update/:submodule", func(ctx *gin.Context) {
+	api.GET("/git/:command/:submodule", func(ctx *gin.Context) {
+		type ReturnOutput map[string]string
 		submodule := ctx.Param("submodule")
+		command := ctx.Param("command")
+		serverLog.Println(command)
+		var consoleOutput string
+		switch command {
+		case "update":
+			consoleOutputBytes, err := CIS.GitPull(filePath.Websites + "/" + submodule)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			err = external.UpdateSingleInfo(submodule)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			consoleOutput = string(consoleOutputBytes)
+		case "install":
+			consoleOutputBytes, err := CIS.GitClone(filePath.Websites, util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
+			if err != nil {
+				fmt.Println("[main]", err)
 
-		gitOut, gitErr := CIS.GetWebsiteModule(submodule)
-		if gitErr != nil {
-			ctx.JSON(500, gitErr.Error())
-			// serverLog.Println("Error Downloading website:", gitErr.Error())
+				ctx.JSON(500, err.Error())
+				return
+			}
+			consoleOutput = string(consoleOutputBytes)
+		case "delete":
+			// delete specified domain dir
+			err := util.DeleteSite(filePath.Websites + "/" + submodule)
+			if err != nil {
+				consoleOutput = err.Error()
+			}
+		default:
+			ctx.Status(403)
 			return
 		}
-		ctx.JSON(200, gitOut)
+
+		ctx.JSON(200, ReturnOutput{"output": string(consoleOutput)})
 	})
 
 	if !isDev {
 		url := "http://localhost:" + *port
-		CIS.OpenBrowser(url)
+		util.OpenBrowser(url)
 	}
 
 	// Starts the server on the specified port

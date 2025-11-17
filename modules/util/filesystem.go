@@ -1,4 +1,4 @@
-package CIS
+package util
 
 import (
 	"embed"
@@ -17,7 +17,7 @@ type FilePath struct {
 	ServerPath string
 }
 
-//go:embed cis
+//go:embed cis scripts
 var build embed.FS
 
 // GetIndex
@@ -93,4 +93,47 @@ func GetRoot() string {
 
 		return usr
 	}
+}
+
+func DeleteSite(dir string) error {
+	err := os.RemoveAll(dir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func RunMigrateScript() error {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "cisMigration-")
+	if err != nil {
+		return err
+	}
+
+	tmpFile, err := os.OpenFile(tmpDir+"/migrate.sh", os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		return err
+	}
+
+	scripts, _ := build.ReadFile("scripts/migrate.sh")
+
+	_, err = tmpFile.Write(scripts)
+	if err != nil {
+		return err
+	}
+	tmpFile.Close()
+
+	migrate := exec.Command("C:/Program Files/Git/git-bash.exe", tmpFile.Name())
+	migrate.Dir = GetOSPaths().Websites
+	err = migrate.Start()
+	if err != nil {
+		fmt.Println(err)
+	}
+	// fmt.Println(tmpFile.Name())
+
+	err = os.RemoveAll(tmpDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -90,6 +90,9 @@ github.com/goccy/go-json/internal/runtime
 # github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38
 ## explicit; go 1.14
 github.com/google/pprof/profile
+# github.com/joho/godotenv v1.3.0 => ../modules-from-go-home/github.com/joho/godotenv@v1.3.0
+## explicit; go 1.24.3
+github.com/joho/godotenv
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
