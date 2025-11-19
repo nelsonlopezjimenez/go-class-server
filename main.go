@@ -41,14 +41,6 @@ func usage() {
 func main() {
 	godotenv.Load() //? load .env file if it exists
 
-	go func() {
-
-		err := util.RunMigrateScript()
-		if err != nil {
-			fmt.Println("error:", err)
-		}
-	}()
-
 	//! All variables that could be modified by .env should use
 	//! util.LoadEnv(key string) and not try to access the environment directly
 	releaseVersion := util.LoadEnv("RELEASE_VERSION")
