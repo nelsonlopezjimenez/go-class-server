@@ -157,6 +157,7 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 
 	err = UpdateSiteMetaData()
 	if err != nil {
+		fmt.Printf("err.Error(): %v\n", err.Error())
 		return nil, err
 	}
 
@@ -238,6 +239,11 @@ func SendAllSites() ([]WebsiteInfo, error) {
 		return nil, err
 	}
 
+	// TODO: Look into the behavior requiring this
+	allSites = filter(allSites, func(elm WebsiteInfo) bool {
+		return elm.Domain != ""
+	})
+
 	return allSites, nil
 }
 
@@ -270,6 +276,7 @@ func UpdateSiteMetaData() error {
 
 	toDelete := []string{}
 
+	println(len(toDelete))
 	for _, name := range localDomainList {
 		if !slices.Contains(externalDomainList, name) {
 			toDelete = append(toDelete, name)
@@ -280,7 +287,7 @@ func UpdateSiteMetaData() error {
 		for _, name := range toDelete {
 			for i, site := range local {
 				if site.Domain == name {
-					local = slices.Delete(local, i, i+1)
+					local = slices.Delete(local, i, i)
 				}
 			}
 		}
@@ -297,7 +304,7 @@ func UpdateSiteMetaData() error {
 	if len(toAdd) > 0 {
 		for _, name := range toAdd {
 			for i, site := range processedExt {
-				if site.Domain == name {
+				if site.Domain == name && name != "" {
 					local = append(local, processedExt[i])
 				}
 			}
@@ -434,4 +441,14 @@ func makeWebsiteInfo(meta MetaData) WebsiteInfo {
 		meta.Info,
 	}
 	return siteData
+}
+
+func filter[Type any](s []Type, fn func(elm Type) bool) []Type {
+	var results []Type
+	for _, item := range s {
+		if fn(item) {
+			results = append(results, item)
+		}
+	}
+	return results
 }

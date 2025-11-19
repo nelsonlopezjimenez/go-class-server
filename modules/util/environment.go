@@ -6,7 +6,7 @@ import "os"
 //? This is the variables that could be modified with environment variables
 var EnvDefaults = map[string]string{
 	"RELEASE_VERSION":     "2.1.1",
-	"RELEASE_DATE":        "11/17/25",
+	"RELEASE_DATE":        "11/19/25",
 	"WEBSITES_GITEA_ADDR": "http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200",
 	"UPDATE_IP":           "http://192.168.1.28:3000",
 	"GIT_INSTALL_ADDR":    "http://192.168.1.47:3000/OfflineWebsites/",

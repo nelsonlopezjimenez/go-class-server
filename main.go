@@ -292,11 +292,13 @@ func main() {
 		case "update":
 			consoleOutputBytes, err := CIS.GitPull(filePath.Websites + "/" + submodule)
 			if err != nil {
+				fmt.Printf("err.Error() pull: %v\n", err.Error())
 				ctx.JSON(500, err.Error())
 				return
 			}
 			err = external.UpdateSingleInfo(submodule)
 			if err != nil {
+				fmt.Printf("err.Error() upSing: %v\n", err.Error())
 				ctx.JSON(500, err.Error())
 				return
 			}
@@ -309,6 +311,14 @@ func main() {
 				ctx.JSON(500, err.Error())
 				return
 			}
+
+			err = external.UpdateSingleInfo(submodule)
+			if err != nil {
+				fmt.Printf("err.Error() upSing: %v\n", err.Error())
+				ctx.JSON(500, err.Error())
+				return
+			}
+
 			consoleOutput = string(consoleOutputBytes)
 		case "delete":
 			// delete specified domain dir
