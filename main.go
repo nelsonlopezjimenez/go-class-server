@@ -93,20 +93,34 @@ func main() {
 	server.Static("/images", "./data/images")
 	_, staticErr := os.Stat(filePath.ServerPath + "/static")
 	if staticErr != nil {
+
 		if os.IsNotExist(staticErr) {
+			fmt.Println("staticErr:", staticErr)
 			err := os.Mkdir(filePath.ServerPath+"/static", 0777)
 			if err != nil {
 				serverLog.Println("Error creating /static:", err)
-			} else {
-				cfcErr := os.Symlink(filePath.CFC, filePath.ServerPath+"/static/CANVAS_FILE_CACHES")
-				if cfcErr != nil {
-					fmt.Println("cfc:", cfcErr)
-				}
-				videoErr := os.Symlink(filePath.Videos, filePath.ServerPath+"/static/Videos")
-				if videoErr != nil {
-					fmt.Println("video:", videoErr)
-				}
 			}
+		}
+	}
+	_, publicErr := os.Stat(filePath.ServerPath + "/static/Public")
+	if os.IsNotExist(publicErr) {
+		publicErr := os.Symlink(filePath.Public, filePath.ServerPath+"/static/Public")
+		if publicErr != nil {
+			fmt.Println("Public:", publicErr)
+		}
+	}
+	_, cfcErr := os.Stat(filePath.ServerPath + "/static/CANVAS_FILE_CACHES")
+	if os.IsNotExist(cfcErr) {
+		cfcErr := os.Symlink(filePath.CFC, filePath.ServerPath+"/static/CANVAS_FILE_CACHES")
+		if cfcErr != nil {
+			fmt.Println("cfc:", cfcErr)
+		}
+	}
+	_, videoErr := os.Stat(filePath.ServerPath + "/static/Videos")
+	if os.IsNotExist(videoErr) {
+		videoErr := os.Symlink(filePath.Videos, filePath.ServerPath+"/static/Videos")
+		if videoErr != nil {
+			fmt.Println("video:", videoErr)
 		}
 	}
 
