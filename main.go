@@ -120,6 +120,18 @@ func main() {
 	server.GET("/websites/*url", func(ctx *gin.Context) {
 		// ctc.Param returns the wildcard value in the url path
 		param := ctx.Param("url")
+
+		if !strings.HasSuffix(param, ".html") && !strings.HasSuffix(param, "/") {
+			if !util.CheckExt(param) {
+				param = param + ".html"
+			}
+		}
+
+		if strings.HasSuffix(param, ".asp") {
+			param = strings.Replace(param, ".asp", ".html", 1)
+		}
+
+		fmt.Println(param)
 		ctx.File(filePath.Websites + "/" + param)
 	})
 

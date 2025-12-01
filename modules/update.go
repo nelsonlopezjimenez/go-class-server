@@ -11,7 +11,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -100,15 +99,10 @@ func (np NetworkPinger) Update() {
 // command to clone the monorepo from Gitea.
 func checkForDependencies(url string) {
 	checkUserConfig()
-	cwd, err := os.Getwd()
-	if err != nil {
-		updateLogger.Panicln("Cannot get CWD:", err)
-	}
-	cwd = strings.Replace(cwd, "\\", "/", -1)
-	_, dirErr := os.Stat(cwd + "/data")
+	depInfo, dirErr := os.Stat(util.GetDepPath())
 	if dirErr != nil {
 		if os.IsNotExist(dirErr) {
-			output, err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "data")
+			output, err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", depInfo.Name())
 			if err != nil {
 				updateLogger.Println(err)
 			}
@@ -129,7 +123,7 @@ func checkForDependencies(url string) {
 }
 
 func updateClassResources() error {
-	out, err := GitPull("./data")
+	out, err := GitPull(util.GetDepPath())
 	if err != nil {
 		return err
 	}
