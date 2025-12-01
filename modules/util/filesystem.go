@@ -102,3 +102,21 @@ func DeleteSite(dir string) error {
 	}
 	return nil
 }
+
+func GetDepPath() string {
+	var depPath string
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Cannot get CWD:", err)
+	}
+	_, dirErr := os.Stat(cwd + "/data")
+
+	if dirErr == nil {
+		depPath = cwd + "/data"
+	} else {
+		depPath = cwd + "/ClassServerResources"
+	}
+
+	return depPath
+}
