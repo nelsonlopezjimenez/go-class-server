@@ -12,3 +12,4 @@ modifyHTML.sh
 build.sh
 .env
 .env.bak
+/ClassServerResources/**/*

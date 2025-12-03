@@ -99,10 +99,10 @@ func (np NetworkPinger) Update() {
 // command to clone the monorepo from Gitea.
 func checkForDependencies(url string) {
 	checkUserConfig()
-	depInfo, dirErr := os.Stat(util.GetDepPath())
+	_, dirErr := os.Stat(util.GetDepPath())
 	if dirErr != nil {
 		if os.IsNotExist(dirErr) {
-			output, err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", depInfo.Name())
+			output, err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "ClassServerResources")
 			if err != nil {
 				updateLogger.Println(err)
 			}
