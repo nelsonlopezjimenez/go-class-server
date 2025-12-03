@@ -15,6 +15,7 @@ type FilePath struct {
 	CFC        string
 	Videos     string
 	ServerPath string
+	Public     string
 }
 
 //go:embed cis
@@ -51,12 +52,12 @@ func GetFileSystemHandler() (http.FileSystem, error) {
 func GetOSPaths() FilePath {
 	switch runtime.GOOS {
 	case "windows":
-		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer"}
+		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer","C:/Users/Public"}
 	case "darwin":
-		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer"}
+		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer","Users/Shared"}
 	default:
 		usr, _ := os.UserHomeDir()
-		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer"}
+		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer", usr} 
 	}
 }
 
