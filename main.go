@@ -228,7 +228,7 @@ func main() {
 		subdir := ctx.Param("mdFile")
 		lessonName := ctx.Param("lesson")
 		// creates a fs.FS  for the information directory
-		fsys := os.DirFS("./data/markdown/lessons/" + subdir)
+		fsys := os.DirFS( util.GetDepPath() +"/markdown/lessons/" + subdir)
 		// Opens the requested markdown file
 		file, err := fs.ReadFile(fsys, lessonName+".md")
 		if err != nil {
@@ -254,7 +254,7 @@ func main() {
 	})
 
 	api.GET("/lessons", func(ctx *gin.Context) {
-		testList := util.RootDir{Root: util.GetDepPath() + "//markdown/lessons"}
+		testList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
 
 		testSlice := map[string][]string{}
 
