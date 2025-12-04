@@ -90,7 +90,7 @@ func main() {
 		serverLog.Println("there was an error in the embedded fs:", err)
 	}
 	server.StaticFS("/assets", fsys)
-	server.Static("/images", "./data/images")
+	server.Static("/images", util.GetDepPath()+"/images")
 	_, staticErr := os.Stat(filePath.ServerPath + "/static")
 	if staticErr != nil {
 
@@ -254,7 +254,7 @@ func main() {
 	})
 
 	api.GET("/lessons", func(ctx *gin.Context) {
-		testList := util.RootDir{Root: "./data/markdown/lessons"}
+		testList := util.RootDir{Root: util.GetDepPath() + "//markdown/lessons"}
 
 		testSlice := map[string][]string{}
 
@@ -277,8 +277,8 @@ func main() {
 	api.GET("/data/lessons", func(ctx *gin.Context) {
 		lessons := []util.LessonInfo{}
 
-		lessonList := util.RootDir{Root: "./data/markdown/lessons"}
-
+		lessonList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
+		fmt.Printf("lessonList.Root: %v\n", lessonList.Root)
 		infoSlice := map[string][]string{}
 
 		lessonList.RecursiveSearch(".md", func(path string, fileName string) {
