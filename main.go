@@ -197,7 +197,7 @@ func main() {
 		}
 
 		// creates a fs.FS  for the markdown directory
-		fsys := os.DirFS("./data/markdown")
+		fsys := os.DirFS(util.GetDepPath() + "/markdown")
 		// removes the leading / from the wildcard param
 		lessonPage = strings.Replace(lessonPage, "/", "", 1)
 		// Opens the requested markdown file
@@ -214,7 +214,7 @@ func main() {
 		subdir := ctx.Param("mdFile")
 		lessonName := ctx.Param("lesson")
 		// creates a fs.FS  for the information directory
-		fsys := os.DirFS("./data/markdown/lessons/" + subdir)
+		fsys := os.DirFS(util.GetDepPath() + "/markdown/lessons/" + subdir)
 		// Opens the requested markdown file
 		file, err := fs.ReadFile(fsys, lessonName+".md")
 		if err != nil {
@@ -228,7 +228,7 @@ func main() {
 		subdir := ctx.Param("mdFile")
 		lessonName := ctx.Param("lesson")
 		// creates a fs.FS  for the information directory
-		fsys := os.DirFS( util.GetDepPath() +"/markdown/lessons/" + subdir)
+		fsys := os.DirFS(util.GetDepPath() + "/markdown/lessons/" + subdir)
 		// Opens the requested markdown file
 		file, err := fs.ReadFile(fsys, lessonName+".md")
 		if err != nil {
@@ -241,7 +241,7 @@ func main() {
 	api.GET("/information/:infoPage", func(ctx *gin.Context) {
 		reqInfoPage := ctx.Param("infoPage")
 		// creates a fs.FS  for the information directory
-		fsys := os.DirFS("./data/markdown/information")
+		fsys := os.DirFS(util.GetDepPath() + "/markdown/information")
 		// removes the leading / from the wildcard param
 		reqInfoPage = strings.Replace(reqInfoPage, "/", "", 1)
 		// Opens the requested markdown file
