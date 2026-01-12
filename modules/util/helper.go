@@ -17,6 +17,7 @@ func CheckExt(url string) bool {
 		".webmanifest",
 		".webp",
 		".mp4",
+		".mp3",
 		".png",
 		".ico",
 		".asp",
@@ -26,6 +27,13 @@ func CheckExt(url string) bool {
 		".ttf",
 		".js.map",
 		".otf",
+		".txt",
+		".md",
+		".pdf",
+		".htm",
+		".wmv",
+		".wav",
+		".ogg",
 	}
 
 	for _, ext := range acceptedFileExt {
