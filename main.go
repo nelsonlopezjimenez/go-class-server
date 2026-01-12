@@ -274,27 +274,28 @@ func main() {
 
 	})
 
-	api.GET("/data/lessons", func(ctx *gin.Context) {
-		lessons := []util.LessonInfo{}
+	// TODO: Remove this block
+	// api.GET("/data/lessons", func(ctx *gin.Context) {
+	// 	lessons := []util.LessonInfo{}
 
-		lessonList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
-		fmt.Printf("lessonList.Root: %v\n", lessonList.Root)
-		infoSlice := map[string][]string{}
+	// 	lessonList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
+	// 	fmt.Printf("lessonList.Root: %v\n", lessonList.Root)
+	// 	infoSlice := map[string][]string{}
 
-		lessonList.RecursiveSearch(".md", func(path string, fileName string) {
+	// 	lessonList.RecursiveSearch(".md", func(path string, fileName string) {
 
-			infoSlice[path] = append(infoSlice[path], fileName)
-		})
+	// 		infoSlice[path] = append(infoSlice[path], fileName)
+	// 	})
 
-		for subdir, lessonSubdir := range infoSlice {
-			for _, lessonMD := range lessonSubdir {
-				lesson := util.MakeLessonInfo(subdir, lessonMD, serverLog)
-				lessons = append(lessons, lesson)
-			}
-			ctx.JSON(200, lessons)
-		}
+	// 	for subdir, lessonSubdir := range infoSlice {
+	// 		for _, lessonMD := range lessonSubdir {
+	// 			lesson := util.MakeLessonInfo(subdir, lessonMD, serverLog)
+	// 			lessons = append(lessons, lesson)
+	// 		}
+	// 		ctx.JSON(200, lessons)
+	// 	}
 
-	})
+	// })
 
 	api.GET("/links", func(ctx *gin.Context) {
 		websiteInfoSlice, err := external.SendAllSites()
