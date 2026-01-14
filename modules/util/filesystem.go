@@ -15,9 +15,10 @@ type FilePath struct {
 	CFC        string
 	Videos     string
 	ServerPath string
+	Public     string
 }
 
-//go:embed cis scripts
+//go:embed cis
 var build embed.FS
 
 // GetIndex
@@ -51,12 +52,12 @@ func GetFileSystemHandler() (http.FileSystem, error) {
 func GetOSPaths() FilePath {
 	switch runtime.GOOS {
 	case "windows":
-		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer"}
+		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer","C:/Users/Public"}
 	case "darwin":
-		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer"}
+		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer","Users/Shared"}
 	default:
 		usr, _ := os.UserHomeDir()
-		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer"}
+		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer", usr} 
 	}
 }
 
@@ -103,36 +104,20 @@ func DeleteSite(dir string) error {
 	return nil
 }
 
-func RunMigrateScript() error {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "cisMigration-")
+func GetDepPath() string {
+	var depPath string
+
+	cwd, err := os.Getwd()
 	if err != nil {
-		return err
+		fmt.Println("Cannot get CWD:", err)
+	}
+	_, dirErr := os.Stat(cwd + "/data")
+
+	if dirErr == nil {
+		depPath = cwd + "/data"
+	} else {
+		depPath = cwd + "/ClassServerResources"
 	}
 
-	tmpFile, err := os.OpenFile(tmpDir+"/migrate.sh", os.O_CREATE|os.O_WRONLY, 0755)
-	if err != nil {
-		return err
-	}
-
-	scripts, _ := build.ReadFile("scripts/migrate.sh")
-
-	_, err = tmpFile.Write(scripts)
-	if err != nil {
-		return err
-	}
-	tmpFile.Close()
-
-	migrate := exec.Command("C:/Program Files/Git/git-bash.exe", tmpFile.Name())
-	migrate.Dir = GetOSPaths().Websites
-	err = migrate.Run()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = os.RemoveAll(tmpDir)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return depPath
 }

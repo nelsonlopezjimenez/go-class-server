@@ -1,98 +1,147 @@
-# Project Name: Automated Code Update and Compilation
+# CIS Class Server - v2.2.3
 
-## Project Overview
+## Overview
 
-This project automates the process of downloading code, compiling it, and updating related resources. It's designed to streamline development workflows and ensure a consistent environment.
+This Go server provides a platform for delivering educational content, primarily focused on lesson materials, interactive exercises and management of offline clones of internet websites. It includes a web server, a command-line interface, and a Git integration module. This server is designed for educational use and prioritizes security and controlled access tailored to limited network access and absence of internet connectivity ( i.e. corrections ).
 
-## Architecture
+## Prerequisites
 
-```
-[Diagram: A simple diagram showing the flow of the process: User -> update.go -> lister.go -> os/exec -> Gitea Repo -> Compiled Code]
-```
+- **Go:** Go 1.18 or later must be installed on your system. You can download it from [https://go.dev/dl/](https://go.dev/dl/).
+- **Dependencies:** The server relies on several Go packages. All Go modules are vendored for consistency across developers.
+- **Environment Variables:** The server utilizes optional environment variables for configuration.
 
-(Note: I'm unable to visually generate a diagram here. I'll describe the diagram in detail if you need it.)
+## Installation
 
-## Dependencies
+1.  **Clone the Repository:**
 
-- **Go:** Version 1.18 or higher
-- **Git:** Installed and configured
-- **(Specify any other dependencies here, such as a specific compiler)**
+    ```sh
+    git clone --recursive http://192.168.1.28:3000/Go_DEV/go-class-server.git
 
-## Installation Instructions
+    cd go-class-server
+    ```
 
-1.  **Clone the repository:** `git clone [your repository URL]`
-2.  **Set up your Go environment:** (Instructions for installing Go will be provided on the Go website: [https://go.dev/doc/install](https://go.dev/doc/install))
-3.  **Install Git:** Ensure Git is installed and accessible from your command line.
+2.  **Build the Frontend**
 
-## Usage Instructions
+    ```sh
+    cd go-class-server-frontend
+    npm run extract && npm run build && npm run move
+    ```
 
-1.  **Navigate to the project directory:** `cd [your repository directory]`
-2.  **Run the main program:** `go run [your main executable file]` (Example: `go run update.go`)
-3.  **Follow the on-screen prompts:** The program will guide you through the process.
+3.  **Run the Server**
+    ```sh
+    cd ..
+    go run .
+    ```
 
 ## Configuration
 
-- **Gitea Server URL:** `GITEA_URL`: The URL of your Gitea server. (Example: `https://your.gitea.server`)
-- **Repository Path:** `REPOSITORY_PATH`: The path to the repository within the Gitea server.
-- **Compiler:** `COMPILER`: Specify the compiler to use (e.g., `go`).
-- **Configuration File:** All settings can be configured via a configuration file.
+The server's behavior is controlled through several configuration options:
 
-## Troubleshooting
+- **Port:** The port the server listens on. Defaults to `22022`. Change this in the command line with the -p flag.
+- **Dev Mode:** When set to `true`, the server runs in development mode. This enables debug logging and displays helpful information. It also increases the frequency of updates of classroom resources to every 10 seconds.
 
-- **"Command not found" errors:** Verify that the necessary tools (Git, compiler) are installed and added to your system's PATH environment variable.
-- **Network issues:** Ensure that you have a stable internet connection.
-- **Permission errors:** Check that the user running the program has the necessary permissions to access the Gitea repository and execute commands.
-  Given that the main application is written in Go, here's a revised set of considerations and recommendations, tailored to the Go ecosystem:
+### Environment Variables
 
-1. Concurrency Enhancements:
+Environment variables will override the hardcoded defaults if they are present. This feature was included to allow for development on a mock network. To change the defaults for these variables they should be edited in the `environment.go` file in the `util` package.
 
-Goroutines: Go's built-in concurrency primitives (goroutines and channels) should be leveraged extensively. The checkForServer() loop, in particular, could be refactored to use a pool of goroutines to concurrently check the server status. This would dramatically improve responsiveness.
-Channels: Use channels for communication between goroutines, ensuring safe and synchronized data exchange. This is crucial for managing the git clone operation and any other potentially long-running tasks. 2. Error Handling (Go Best Practices):
+As of version 2.2.3 there is significant overlap between these variables and this has been identified as a target for code cleanup.
 
-errors.Wrap(): Instead of simply returning errors, use errors.Wrap() to provide more context. This will make debugging significantly easier.
-Explicit Error Returns: Go favors explicit error returns (e.g., return err ) over returning nil.
-defer fmt.Println(): Use defer fmt.Println() blocks to log crucial events, regardless of whether an error occurs. 3. Standard Library Utilization:
+- RELEASE_VERSION: The current version number
+- RELEASE_DATE: The date of current release
+- WEBSITES_GITEA_ADDR: The query address and parameters for websites repo information
+- UPDATE_IP: The root address for course content
+- GIT_INSTALL_ADDR: The address for the user or organization hosting offline website repos
+- WEBSITES_REPO_ADDR: The address to be queried for a single website meta
 
-os/exec: Go's os/exec package is well-suited for running shell commands. Ensure you’re utilizing its features effectively (e.g., using cmd/Cmd for better control).
-io/ioutil or os: Utilize io/ioutil or os packages for file I/O operations (e.g., reading and writing files).
-strings package: Use the strings package for string manipulation, which is a standard part of the Go library. 4. Code Structure & Design:
+## Running the Server
 
-Modularization: Break down the code into smaller, well-defined modules or packages. This will improve maintainability and testability.
-Interfaces: Define interfaces for components to interact with each other. This promotes loose coupling and testability.
-Configuration: Implement a configuration management system (e.g., using viper or envconfig) to handle settings like the Gitea server URL, repository paths, and other parameters. 5. Testing:
+1.  **Start the Server:**
 
-Unit Tests: Write thorough unit tests for each component.
-Integration Tests: Implement integration tests to verify the interaction between different parts of the system. 6. Specific Tool Recommendations:
+    ```sh
+    go run main.go [options]
+    ```
 
-Viper or Envconfig: For configuration management.
-Go Modules: Use Go modules for dependency management.
-testing package: Go's built-in testing library.
-Revised Considerations for the checkForServer() Function:
+    - `-p <port>`: Specifies the port number. Default is '22022.
+    - `-dev`: Set to `true` to enable development mode (debug logging, etc.). Default is `false`.
 
-Given that this function runs repeatedly, the use of goroutines is absolutely critical. This would look something like:
+## Usage
 
-Go
+### Web Interface
 
-Apply
-// Example - Simplified illustration
-func checkServerStatus(serverURL string) error {
-// ... code to execute the checkServer command ...
-return errors.Wrap(err, "failed to check server status")
+The server provides a simple web interface accessible at `http://localhost:<port>`. This interface provides the core functionality, offering access to lesson materials and interactive exercises.
+
+## Key Features
+
+- **Lesson Delivery:** Provides a structured platform for accessing educational content.
+- **Git Integration:** Enables automatic updates and management of lesson materials via Git.
+- **Command-Line Interface:** Offers a flexible way to interact with the server, useful for testing and debugging.
+- **Development Mode:** Facilitates debugging and development.
+
+## Security Considerations
+
+- **Restricted Access:** The server is designed to be accessed only by the localhost. Contents of this server cannot be accessed by others on the local network preventing the transfer of data between incarcerated students. This can only be disabled by the developer and cannot be changed by any means once the code has been compiled.
+- **Git Access Control:** Strictly control access to the Git repository to prevent unauthorized modifications. The application uses Git repositories as source of truth for all materials (websites, and course content), if changes are made to content on the local machine, once the update routine runs
+  it will be overwritten with a forced pull request. This ensures that content is as secure as the policies used to manage the content repo.
+
+## Contributing
+
+We welcome contributions to this project. Please follow these guidelines:
+
+1.  Fork the repository.
+2.  Create a new branch for your changes.
+3.  Commit your changes.
+4.  Include a description of the changes and the intent behind them in a `CONTRIBUTION.MD` file committed to your branch.
+5.  Submit a pull request.
+
+## API and Routes
+
+### `GET "/api/information/[filename]"`
+
+- Sends the contents for the requested informational files located in `classServer/ClassServerResources/information`. e.g about.md
+
+### `GET "/api/lessons"`
+
+- Sends a json object of all available lessons to the frontend for processing.
+
+### `GET "/api/data/[subfolder]/[filename]"`
+
+- Sends the markdown for the desired lesson to the frontend to be rendered to HTML.
+
+### `GET "/api/links"`
+
+- Sends a json object in the following shape:
+
+```json
+{
+  "name": "api-docs.deepseek.com", // name of offline site
+  "indexPath": "C:/websites/api-docs.deepseek.com/index.html", // path on local system,
+  "state": "installed", // state (not_installed, installed, need_update, or orphaned)
+  "meta": {
+    // metadata pulled from Gitea 47
+    "size": 1044,
+    "topics": [],
+    "description": "The DeepSeek API uses an API format compatible with OpenAI. By modifying the configuration, you can use the OpenAI SDK or softwares compatible with the OpenAI API to access the DeepSeek API.",
+    "created_at": "2025-10-28T12:54:13-07:00",
+    "updated_at": "2025-11-03T14:16:38-08:00"
+  }
 }
+```
 
-func runServerChecks(maxConcurrent int) {
-var wg sync.WaitGroup
-wg.Add(maxConcurrent)
-for i := 0; i < maxConcurrent; i++ {
-go func() {
-defer wg.Done()
-// ... perform the checkServer call ...
-}()
-}
-wg.Wait()
-}
-To help me focus my advice, could you tell me:
+### `GET "/"`
 
-What is the approximate size of the ClassServerResources repository?
-What commands are executed when the user initiates code compilation (e.g., what specific compiler is used)?
-Are there any specific performance bottlenecks you've observed?
+- Root route. Serves the index file for the front end.
+
+### `GET "/api/git/[git command]/[repo]"`
+
+- This route allows the running of three commands related to webpage maintenance:
+  - `install`: Runs git clone to download the desired website.
+  - `update`: Runs git push to update the website if needed.
+  - `delete`: runs rm -rf to delete the desired website
+
+### `GET "/websites/[filepath]"`
+
+- This route will serve the index file supplied by the `indexPath` property of the links json.
+
+### `POST "/websites/try.w3schools.com/[path]"`
+  - This route allows the code examples to work on the offline version of W3S for TS, Perl, Python, and Go. This feature does require the download of a browser extension.
+

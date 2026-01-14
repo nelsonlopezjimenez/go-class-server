@@ -3,7 +3,6 @@ frontend/node_modules
 frontend/build
 frontend/.vscode
 shell.sh
-data
 modules/cis/*
 modules/util/cis/*
 CANVAS_FILE_CACHE
@@ -12,3 +11,6 @@ modifyHTML.sh
 build.sh
 .env
 .env.bak
+/ClassServerResources/**/*
+bin
+modifyHTML.sh

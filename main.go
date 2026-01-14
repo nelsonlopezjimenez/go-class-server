@@ -41,14 +41,6 @@ func usage() {
 func main() {
 	godotenv.Load() //? load .env file if it exists
 
-	go func() {
-
-		err := util.RunMigrateScript()
-		if err != nil {
-			fmt.Println("error:", err)
-		}
-	}()
-
 	//! All variables that could be modified by .env should use
 	//! util.LoadEnv(key string) and not try to access the environment directly
 	releaseVersion := util.LoadEnv("RELEASE_VERSION")
@@ -98,23 +90,37 @@ func main() {
 		serverLog.Println("there was an error in the embedded fs:", err)
 	}
 	server.StaticFS("/assets", fsys)
-	server.Static("/images", "./data/images")
+	server.Static("/images", util.GetDepPath()+"/images")
 	_, staticErr := os.Stat(filePath.ServerPath + "/static")
 	if staticErr != nil {
+
 		if os.IsNotExist(staticErr) {
+			fmt.Println("staticErr:", staticErr)
 			err := os.Mkdir(filePath.ServerPath+"/static", 0777)
 			if err != nil {
 				serverLog.Println("Error creating /static:", err)
-			} else {
-				cfcErr := os.Symlink(filePath.CFC, filePath.ServerPath+"/static/CANVAS_FILE_CACHES")
-				if cfcErr != nil {
-					fmt.Println("cfc:", cfcErr)
-				}
-				videoErr := os.Symlink(filePath.Videos, filePath.ServerPath+"/static/Videos")
-				if videoErr != nil {
-					fmt.Println("video:", videoErr)
-				}
 			}
+		}
+	}
+	_, publicErr := os.Stat(filePath.ServerPath + "/static/Public")
+	if os.IsNotExist(publicErr) {
+		publicErr := os.Symlink(filePath.Public, filePath.ServerPath+"/static/Public")
+		if publicErr != nil {
+			fmt.Println("Public:", publicErr)
+		}
+	}
+	_, cfcErr := os.Stat(filePath.ServerPath + "/static/CANVAS_FILE_CACHES")
+	if os.IsNotExist(cfcErr) {
+		cfcErr := os.Symlink(filePath.CFC, filePath.ServerPath+"/static/CANVAS_FILE_CACHES")
+		if cfcErr != nil {
+			fmt.Println("cfc:", cfcErr)
+		}
+	}
+	_, videoErr := os.Stat(filePath.ServerPath + "/static/Videos")
+	if os.IsNotExist(videoErr) {
+		videoErr := os.Symlink(filePath.Videos, filePath.ServerPath+"/static/Videos")
+		if videoErr != nil {
+			fmt.Println("video:", videoErr)
 		}
 	}
 
@@ -128,6 +134,18 @@ func main() {
 	server.GET("/websites/*url", func(ctx *gin.Context) {
 		// ctc.Param returns the wildcard value in the url path
 		param := ctx.Param("url")
+
+		if !strings.HasSuffix(param, ".html") && !strings.HasSuffix(param, "/") {
+			if !util.CheckExt(param) {
+				param = param + ".html"
+			}
+		}
+
+		if strings.HasSuffix(param, ".asp") {
+			param = strings.Replace(param, ".asp", ".html", 1)
+		}
+
+		fmt.Println(param)
 		ctx.File(filePath.Websites + "/" + param)
 	})
 
@@ -179,7 +197,7 @@ func main() {
 		}
 
 		// creates a fs.FS  for the markdown directory
-		fsys := os.DirFS("./data/markdown")
+		fsys := os.DirFS(util.GetDepPath() + "/markdown")
 		// removes the leading / from the wildcard param
 		lessonPage = strings.Replace(lessonPage, "/", "", 1)
 		// Opens the requested markdown file
@@ -196,7 +214,7 @@ func main() {
 		subdir := ctx.Param("mdFile")
 		lessonName := ctx.Param("lesson")
 		// creates a fs.FS  for the information directory
-		fsys := os.DirFS("./data/markdown/lessons/" + subdir)
+		fsys := os.DirFS(util.GetDepPath() + "/markdown/lessons/" + subdir)
 		// Opens the requested markdown file
 		file, err := fs.ReadFile(fsys, lessonName+".md")
 		if err != nil {
@@ -210,7 +228,7 @@ func main() {
 		subdir := ctx.Param("mdFile")
 		lessonName := ctx.Param("lesson")
 		// creates a fs.FS  for the information directory
-		fsys := os.DirFS("./data/markdown/lessons/" + subdir)
+		fsys := os.DirFS(util.GetDepPath() + "/markdown/lessons/" + subdir)
 		// Opens the requested markdown file
 		file, err := fs.ReadFile(fsys, lessonName+".md")
 		if err != nil {
@@ -223,7 +241,7 @@ func main() {
 	api.GET("/information/:infoPage", func(ctx *gin.Context) {
 		reqInfoPage := ctx.Param("infoPage")
 		// creates a fs.FS  for the information directory
-		fsys := os.DirFS("./data/markdown/information")
+		fsys := os.DirFS(util.GetDepPath() + "/markdown/information")
 		// removes the leading / from the wildcard param
 		reqInfoPage = strings.Replace(reqInfoPage, "/", "", 1)
 		// Opens the requested markdown file
@@ -236,7 +254,7 @@ func main() {
 	})
 
 	api.GET("/lessons", func(ctx *gin.Context) {
-		testList := util.RootDir{Root: "./data/markdown/lessons"}
+		testList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
 
 		testSlice := map[string][]string{}
 
@@ -256,27 +274,28 @@ func main() {
 
 	})
 
-	api.GET("/data/lessons", func(ctx *gin.Context) {
-		lessons := []util.LessonInfo{}
+	// TODO: Remove this block
+	// api.GET("/data/lessons", func(ctx *gin.Context) {
+	// 	lessons := []util.LessonInfo{}
 
-		lessonList := util.RootDir{Root: "./data/markdown/lessons"}
+	// 	lessonList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
+	// 	fmt.Printf("lessonList.Root: %v\n", lessonList.Root)
+	// 	infoSlice := map[string][]string{}
 
-		infoSlice := map[string][]string{}
+	// 	lessonList.RecursiveSearch(".md", func(path string, fileName string) {
 
-		lessonList.RecursiveSearch(".md", func(path string, fileName string) {
+	// 		infoSlice[path] = append(infoSlice[path], fileName)
+	// 	})
 
-			infoSlice[path] = append(infoSlice[path], fileName)
-		})
+	// 	for subdir, lessonSubdir := range infoSlice {
+	// 		for _, lessonMD := range lessonSubdir {
+	// 			lesson := util.MakeLessonInfo(subdir, lessonMD, serverLog)
+	// 			lessons = append(lessons, lesson)
+	// 		}
+	// 		ctx.JSON(200, lessons)
+	// 	}
 
-		for subdir, lessonSubdir := range infoSlice {
-			for _, lessonMD := range lessonSubdir {
-				lesson := util.MakeLessonInfo(subdir, lessonMD, serverLog)
-				lessons = append(lessons, lesson)
-			}
-			ctx.JSON(200, lessons)
-		}
-
-	})
+	// })
 
 	api.GET("/links", func(ctx *gin.Context) {
 		websiteInfoSlice, err := external.SendAllSites()
@@ -300,11 +319,13 @@ func main() {
 		case "update":
 			consoleOutputBytes, err := CIS.GitPull(filePath.Websites + "/" + submodule)
 			if err != nil {
+				fmt.Printf("err.Error() pull: %v\n", err.Error())
 				ctx.JSON(500, err.Error())
 				return
 			}
 			err = external.UpdateSingleInfo(submodule)
 			if err != nil {
+				fmt.Printf("err.Error() upSing: %v\n", err.Error())
 				ctx.JSON(500, err.Error())
 				return
 			}
@@ -317,6 +338,14 @@ func main() {
 				ctx.JSON(500, err.Error())
 				return
 			}
+
+			err = external.UpdateSingleInfo(submodule)
+			if err != nil {
+				fmt.Printf("err.Error() upSing: %v\n", err.Error())
+				ctx.JSON(500, err.Error())
+				return
+			}
+
 			consoleOutput = string(consoleOutputBytes)
 		case "delete":
 			// delete specified domain dir

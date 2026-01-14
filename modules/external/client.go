@@ -146,21 +146,16 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 	localWebsitesDir := util.RootDir{Root: websites}
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 
+	err := UpdateSiteMetaData()
+	if err != nil {
+		fmt.Printf("err.Error(): %v\n", err.Error())
+	}
+
 	localData, err := loadMetaFromFile()
 	if err != nil {
 		return nil, err
 	}
-	_, err = getMetaFromGitea()
-	if err != nil {
-		goto offline
-	}
 
-	err = UpdateSiteMetaData()
-	if err != nil {
-		return nil, err
-	}
-
-offline:
 	for i, website := range localData {
 		if website.Topics == nil {
 			localData[i].Topics = []string{}
@@ -238,6 +233,8 @@ func SendAllSites() ([]WebsiteInfo, error) {
 		return nil, err
 	}
 
+	allSites = sortWebInfos(allSites)
+
 	return allSites, nil
 }
 
@@ -250,16 +247,17 @@ func UpdateSiteMetaData() error {
 	if err != nil {
 		return err
 	}
-	file, err := os.OpenFile(websites+"/info.json", os.O_TRUNC|os.O_CREATE, 0755)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
 
 	external, err := getMetaFromGitea()
 	if err != nil {
 		return err
 	}
+
+	file, err := os.OpenFile(websites+"/info.json", os.O_TRUNC|os.O_CREATE, 0755)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
 
 	processedExt, err := processMetaBytesFromGitea(external)
 	if err != nil {
@@ -270,6 +268,7 @@ func UpdateSiteMetaData() error {
 
 	toDelete := []string{}
 
+	println(len(toDelete))
 	for _, name := range localDomainList {
 		if !slices.Contains(externalDomainList, name) {
 			toDelete = append(toDelete, name)
@@ -278,11 +277,9 @@ func UpdateSiteMetaData() error {
 
 	if len(toDelete) > 0 {
 		for _, name := range toDelete {
-			for i, site := range local {
-				if site.Domain == name {
-					local = slices.Delete(local, i, i+1)
-				}
-			}
+			local = filter(local, func(elm WebsiteInfo) bool {
+				return elm.Domain != name
+			})
 		}
 	}
 
@@ -297,7 +294,7 @@ func UpdateSiteMetaData() error {
 	if len(toAdd) > 0 {
 		for _, name := range toAdd {
 			for i, site := range processedExt {
-				if site.Domain == name {
+				if site.Domain == name && name != "" {
 					local = append(local, processedExt[i])
 				}
 			}
@@ -434,4 +431,46 @@ func makeWebsiteInfo(meta MetaData) WebsiteInfo {
 		meta.Info,
 	}
 	return siteData
+}
+
+// filter
+//
+// An example of a generic fn. It takes a slice of any type and returns a
+// filtered slice of the same type. It takes a callback that returns a bool
+// type. Every item in the passed slice is fed into the callback fn and is
+// added to the returned slice if the callback returns true.
+func filter[Type any](s []Type, fn func(elm Type) bool) []Type {
+	var results []Type
+	for _, item := range s {
+		if fn(item) {
+			results = append(results, item)
+		}
+	}
+	return results
+}
+
+// sortWebInfos
+//
+// a fn that takes a []WebInfo and returns a []WebInfo that has been
+// sorted by the Domain field. This helps arrange the links on the
+// offline-links page
+func sortWebInfos(s []WebsiteInfo) []WebsiteInfo {
+	var domain []string
+	var sorted []WebsiteInfo
+
+	for _, site := range s {
+		domain = append(domain, site.Domain)
+	}
+
+	slices.Sort(domain)
+
+	for _, name := range domain {
+		for _, site := range s {
+			if name == site.Domain {
+				sorted = append(sorted, site)
+				break
+			}
+		}
+	}
+	return sorted
 }
