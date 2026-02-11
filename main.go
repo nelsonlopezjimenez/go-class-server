@@ -8,12 +8,18 @@ package main
 import (
 	// "bytes"
 
+	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	CIS "localhost/CIS/modules"
 	"localhost/CIS/modules/external"
@@ -66,15 +72,23 @@ func main() {
 		serverLog.Println("The update  URL is:", updateIP)
 	}
 
-	// The server var creates the default gin engine instance
-	server := gin.Default()
+	// The router var creates the default gin engine instance
+	// Todo: Move all gin related logic to its own module
+	router := gin.Default()
+	// server var changed to create an instance of http.Server and
+	// the default gin instance is passed as a handler to take advantage
+	// of the http.Server.Shutdown method to facilitate graceful shutdown
+	server := &http.Server{
+		Addr:    ":" + *port,
+		Handler: router,
+	}
 
 	// This middleware function prevents the access of the students' server
 	// to anyone on the outside network. This prevents the possibility of data
 	// transfer from system to system as prohibited by DOC.
 	// Note: This can only be controlled via the source code. After compile,
 	// This cannot be circumvented from the executable itself.
-	server.Use(func(ctx *gin.Context) {
+	router.Use(func(ctx *gin.Context) {
 		switch ctx.RemoteIP() {
 		case "::1", "127.0.0.1":
 			ctx.Next()
@@ -83,14 +97,14 @@ func main() {
 			ctx.Abort()
 		}
 	})
-	api := server.Group("/api")
+	api := router.Group("/api")
 	// The following line defines a static asset folder
 	fsys, err := util.GetFileSystemHandler()
 	if err != nil {
 		serverLog.Println("there was an error in the embedded fs:", err)
 	}
-	server.StaticFS("/assets", fsys)
-	server.Static("/images", util.GetDepPath()+"/images")
+	router.StaticFS("/assets", fsys)
+	router.Static("/images", util.GetDepPath()+"/images")
 	_, staticErr := os.Stat(filePath.ServerPath + "/static")
 	if staticErr != nil {
 
@@ -124,14 +138,13 @@ func main() {
 		}
 	}
 
-	// server.Static("/static", filePath.ServerPath+"/static/")
-	server.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
+	router.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
 
 	Gitea := CIS.NetworkPinger{Url: updateIP, Timeout: 10}
 	// Goroutine to check for lesson repo and updates if there is a connection
 	go Gitea.Update()
 	// This middleware function returns the requested offline website to the client
-	server.GET("/websites/*url", func(ctx *gin.Context) {
+	router.GET("/websites/*url", func(ctx *gin.Context) {
 		// ctc.Param returns the wildcard value in the url path
 		param := ctx.Param("url")
 
@@ -152,7 +165,7 @@ func main() {
 	// This allows the available w3schools examples to execute
 	// A browser extension is also required to route the post
 	// request from W3S to the localhost
-	server.POST("/websites/try.w3schools.com/*path", func(ctx *gin.Context) {
+	router.POST("/websites/try.w3schools.com/*path", func(ctx *gin.Context) {
 		code := ctx.Request.FormValue("code")
 		// code2 := ctx.Request.FormValue("code2")
 		// code3 := ctx.Request.FormValue("code3")
@@ -168,7 +181,7 @@ func main() {
 
 	})
 
-	server.GET("/", func(ctx *gin.Context) {
+	router.GET("/", func(ctx *gin.Context) {
 		// route function for handling requests to the root
 		index, err := util.GetIndex()
 		if err != nil {
@@ -177,7 +190,7 @@ func main() {
 		fmt.Fprintf(ctx.Writer, "%s", index)
 	})
 
-	server.GET("/:allOther/*any", func(ctx *gin.Context) {
+	router.GET("/:allOther/*any", func(ctx *gin.Context) {
 		index, err := util.GetIndex()
 		if err != nil {
 			serverLog.Panicln(err)
@@ -186,45 +199,7 @@ func main() {
 
 	})
 
-	server.GET("/lessons/:mdFile", func(ctx *gin.Context) {
-		// renders markdown files into HTML and sends to client
-
-		lessonPage := ctx.Param("mdFile")
-
-		// if no markdown file is requested, returns information.md by default
-		if lessonPage == "/" {
-			lessonPage = "index"
-		}
-
-		// creates a fs.FS  for the markdown directory
-		fsys := os.DirFS(util.GetDepPath() + "/markdown")
-		// removes the leading / from the wildcard param
-		lessonPage = strings.Replace(lessonPage, "/", "", 1)
-		// Opens the requested markdown file
-		file, err := fs.ReadFile(fsys, lessonPage+".md")
-		if err != nil {
-			serverLog.Panicln("There was an error getting the mardown file:", err)
-		}
-
-		//sends raw MD as string to be parsed on the frontend
-		ctx.JSON(200, string(file))
-	})
-
-	server.GET("/lessons/:mdFile/:lesson", func(ctx *gin.Context) {
-		subdir := ctx.Param("mdFile")
-		lessonName := ctx.Param("lesson")
-		// creates a fs.FS  for the information directory
-		fsys := os.DirFS(util.GetDepPath() + "/markdown/lessons/" + subdir)
-		// Opens the requested markdown file
-		file, err := fs.ReadFile(fsys, lessonName+".md")
-		if err != nil {
-			serverLog.Panicln("There was an error getting the requested file:", err)
-		}
-
-		ctx.JSON(200, string(file))
-	})
-
-	server.GET("/raw/lessons/:mdFile/:lesson", func(ctx *gin.Context) {
+	router.GET("/raw/lessons/:mdFile/:lesson", func(ctx *gin.Context) {
 		subdir := ctx.Param("mdFile")
 		lessonName := ctx.Param("lesson")
 		// creates a fs.FS  for the information directory
@@ -264,38 +239,6 @@ func main() {
 		})
 		ctx.JSON(200, testSlice)
 	})
-
-	api.GET("/data/:subdir/:lesson", func(ctx *gin.Context) {
-		subdir := ctx.Param("subdir")
-		lessonName := ctx.Param("lesson")
-
-		lesson := util.MakeLessonInfo(subdir, lessonName+".md", serverLog)
-		ctx.JSON(200, lesson)
-
-	})
-
-	// TODO: Remove this block
-	// api.GET("/data/lessons", func(ctx *gin.Context) {
-	// 	lessons := []util.LessonInfo{}
-
-	// 	lessonList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
-	// 	fmt.Printf("lessonList.Root: %v\n", lessonList.Root)
-	// 	infoSlice := map[string][]string{}
-
-	// 	lessonList.RecursiveSearch(".md", func(path string, fileName string) {
-
-	// 		infoSlice[path] = append(infoSlice[path], fileName)
-	// 	})
-
-	// 	for subdir, lessonSubdir := range infoSlice {
-	// 		for _, lessonMD := range lessonSubdir {
-	// 			lesson := util.MakeLessonInfo(subdir, lessonMD, serverLog)
-	// 			lessons = append(lessons, lesson)
-	// 		}
-	// 		ctx.JSON(200, lessons)
-	// 	}
-
-	// })
 
 	api.GET("/links", func(ctx *gin.Context) {
 		websiteInfoSlice, err := external.SendAllSites()
@@ -366,10 +309,28 @@ func main() {
 		util.OpenBrowser(url)
 	}
 
-	// Starts the server on the specified port
-	svrErr := server.Run(":" + *port)
-	if svrErr != nil {
-		serverLog.Println("Error in the server:", svrErr)
-	}
+	// Start the server in a goroutine as to not block the graceful
+	// shutdown logic after the call to server.ListenAndServe
+	go func() {
+		// Starts the server on the specified port
+		svrErr := server.ListenAndServe()
+		if svrErr != nil && !errors.Is(svrErr, http.ErrServerClosed) {
+			serverLog.Println("Error in the server:", svrErr)
+		}
+	}()
 
+	// TODO: Separate this into its own package/file
+	// Everything beyond this line is logic for handling graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	serverLog.Println("Gracefully shutting down the server.")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		serverLog.Fatal("Server forced to shutdown:", err)
+	}
+	serverLog.Println("Server exiting")
 }
