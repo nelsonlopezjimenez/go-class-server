@@ -58,7 +58,7 @@ func SendInformationPage(ctx *gin.Context) {
 }
 
 func SendLessonsList(ctx *gin.Context) {
-	testList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
+	testList := util.MakeRootDir(util.GetDepPath() + "/markdown/lessons")
 
 	testSlice := map[string][]string{}
 

@@ -143,7 +143,7 @@ func loadMetaFromFile() ([]WebsiteInfo, error) {
 }
 
 func BuildWebsiteList() ([]WebsiteInfo, error) {
-	localWebsitesDir := util.RootDir{Root: websites}
+	localWebsitesDir := util.MakeRootDir(websites)
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 
 	err := UpdateSiteMetaData()
@@ -179,7 +179,7 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 // it to the current website list sent to the front end.
 func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 	var classSites []string
-	localWebsitesDir := util.RootDir{Root: websites}
+	localWebsitesDir := util.MakeRootDir(websites)
 
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 	for _, external := range siteList {
@@ -200,7 +200,7 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 				}
 			}
 			index := ""
-			orphanRoot := util.RootDir{Root: util.GetOSPaths().Websites + "/" + dirent}
+			orphanRoot := util.MakeRootDir(util.GetOSPaths().Websites + "/" + dirent)
 			orphanRoot.FindIndex(func(path string, ent fs.DirEntry) {
 				index = path + "/" + ent.Name()
 
