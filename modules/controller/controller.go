@@ -58,11 +58,11 @@ func SendInformationPage(ctx *gin.Context) {
 }
 
 func SendLessonsList(ctx *gin.Context) {
-	testList := util.RootDir{Root: util.GetDepPath() + "/markdown/lessons"}
+	testList := util.MakeRootDir(util.GetDepPath() + "/markdown/lessons")
 
 	testSlice := map[string][]string{}
 
-	testList.RecursiveSearch(".md", func(path string, fileName string) {
+	testList.RecursiveSearchByExt(".md", func(path string, fileName string) {
 
 		testSlice[path] = append(testSlice[path], fileName)
 	})
