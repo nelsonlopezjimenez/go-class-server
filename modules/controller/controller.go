@@ -62,7 +62,7 @@ func SendLessonsList(ctx *gin.Context) {
 
 	testSlice := map[string][]string{}
 
-	testList.RecursiveSearch(".md", func(path string, fileName string) {
+	testList.RecursiveSearchByExt(".md", func(path string, fileName string) {
 
 		testSlice[path] = append(testSlice[path], fileName)
 	})
