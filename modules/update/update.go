@@ -1,9 +1,10 @@
 // Rocky Connor 420711
-package CIS
+package update
 
 import (
 	"fmt"
-	command "localhost/CIS/modules/cmd"
+	"localhost/CIS/modules/command"
+	"localhost/CIS/modules/external"
 
 	// "localhost/CIS/modules/external"
 	"localhost/CIS/modules/util"
@@ -102,7 +103,7 @@ func checkForDependencies(url string) {
 	_, dirErr := os.Stat(util.GetDepPath())
 	if dirErr != nil {
 		if os.IsNotExist(dirErr) {
-			output, err := GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "ClassServerResources")
+			output, err := external.GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "ClassServerResources")
 			if err != nil {
 				updateLogger.Println(err)
 			}
@@ -123,7 +124,7 @@ func checkForDependencies(url string) {
 }
 
 func updateClassResources() error {
-	out, err := GitPull(util.GetDepPath())
+	out, err := external.GitPull(util.GetDepPath())
 	if err != nil {
 		return err
 	}

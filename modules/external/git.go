@@ -1,10 +1,10 @@
-package CIS
+package external
 
 import (
 	"fmt"
 	"os"
 
-	command "localhost/CIS/modules/cmd"
+	"localhost/CIS/modules/command"
 )
 
 // GitPull

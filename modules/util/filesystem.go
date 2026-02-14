@@ -52,12 +52,12 @@ func GetFileSystemHandler() (http.FileSystem, error) {
 func GetOSPaths() FilePath {
 	switch runtime.GOOS {
 	case "windows":
-		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer","C:/Users/Public"}
+		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer", "C:/Users/Public"}
 	case "darwin":
-		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer","Users/Shared"}
+		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer", "Users/Shared"}
 	default:
 		usr, _ := os.UserHomeDir()
-		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer", usr} 
+		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer", usr}
 	}
 }
 
@@ -120,4 +120,24 @@ func GetDepPath() string {
 	}
 
 	return depPath
+}
+
+func CreateSymlink(linkName string) error {
+	err := os.Symlink(GetOSPaths().CFC, GetOSPaths().ServerPath+linkName)
+	if err != nil {
+		return fmt.Errorf("there was an error creating the link to %s: %w", linkName, err)
+	}
+	return nil
+}
+
+func CheckForSymlink(linkName string) error {
+	_, err := os.Stat(GetOSPaths().ServerPath + linkName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return CreateSymlink(linkName)
+		} else {
+			return fmt.Errorf("could not check for link %s: %w", linkName, err)
+		}
+	}
+	return nil
 }

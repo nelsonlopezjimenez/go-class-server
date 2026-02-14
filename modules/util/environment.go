@@ -5,12 +5,13 @@ import "os"
 
 //? This is the variables that could be modified with environment variables
 var EnvDefaults = map[string]string{
-	"RELEASE_VERSION":     "2.2.3",
-	"RELEASE_DATE":        "12/3/25",
-	"WEBSITES_GITEA_ADDR": "http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200",
-	"UPDATE_IP":           "http://192.168.1.28:3000",
-	"GIT_INSTALL_ADDR":    "http://192.168.1.47:3000/OfflineWebsites/",
-	"WEBSITES_REPO_ADDR":  "http://192.168.1.47:3000/api/v1/repos/ClassroomResources/",
+	"RELEASE_VERSION":       "3.0.0",
+	"RELEASE_DATE":          "2/11/26",
+	"WEBSITES_GITEA_ADDR":   "http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200",
+	"UPDATE_IP":             "http://192.168.1.28:3000",
+	"GIT_INSTALL_ADDR":      "http://192.168.1.47:3000/OfflineWebsites/",
+	"WEBSITES_REPO_ADDR":    "http://192.168.1.47:3000/api/v1/repos/ClassroomResources/",
+	"CIS_CLASS_SERVER_PORT": "22022",
 }
 
 //? LoadEnv checks to see if a value exists as an environment variable
@@ -29,4 +30,10 @@ func LoadEnv(key string) string {
 		return EnvDefaults[key]
 	}
 
+}
+
+func IsDevelopment() bool {
+	VERSION_MODE, _ := os.LookupEnv("RELEASE_VERSION")
+
+	return VERSION_MODE == "DEV"
 }

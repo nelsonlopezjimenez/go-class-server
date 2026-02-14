@@ -1,5 +1,6 @@
-// Rocky Connor 420711
 package util
+
+// Rocky Connor 420711
 
 import (
 	"fmt"
