@@ -55,9 +55,12 @@ func main() {
 		Addr:    ":" + PORT,
 		Handler: router,
 	}
-
-	router.Use(util.IsAuthorized)
+	//
+	router.Use(controller.IsAuthorized)
+	// router.Use(controller.CheckForSiteExt)
 	api := router.Group("/api")
+	websitesGroup := router.Group("/websites")
+	websitesGroup.Use(controller.CheckForSiteExt)
 	// The following line defines a static asset folder
 	fsys, err := util.GetFileSystemHandler()
 	if err != nil {
@@ -82,6 +85,7 @@ func main() {
 	util.CheckForSymlink("/static/Videos")
 
 	router.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
+	websitesGroup.StaticFS("/", gin.Dir(filePath.Websites, true))
 
 	Gitea := update.NetworkPinger{Url: util.LoadEnv("UPDATE_IP"), Timeout: 10}
 
@@ -89,8 +93,9 @@ func main() {
 	go Gitea.Update()
 	// This middleware function returns the requested offline website to the client
 	router.GET("/", controller.SendIndex)
-	router.GET("/websites/*url", controller.GetWebsite)
+	// router.GET("/websites/*url", controller.GetWebsite)
 	router.POST("/websites/try.w3schools.com/*path", controller.HandleUserCode)
+	// router.GET("/websites", controller.CheckForSiteExt)
 	router.GET("/:allOther/*any", controller.SendIndex)
 	router.GET("/raw/lessons/:mdFile/:lesson", controller.SendOneLesson)
 
