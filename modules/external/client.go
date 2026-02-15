@@ -1,3 +1,6 @@
+// Package external handles all logic to do with connecting to Gitea and git handling.
+// This is where all website data comes from. info.json gets built from this package as
+// well.
 package external
 
 import (
@@ -81,7 +84,12 @@ func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
 //
 // If there is no info.json file located in the websites folder,
 // this fn will create it and save the website metadata to file.
-func createLocalMeta() error {
+func createLocalMeta() (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("something went wrong creating info.json: %w", err)
+		}
+	}()
 	metaBytes, err := getMetaFromGitea()
 	if err != nil {
 		return err
@@ -268,7 +276,6 @@ func UpdateSiteMetaData() error {
 
 	toDelete := []string{}
 
-	println(len(toDelete))
 	for _, name := range localDomainList {
 		if !slices.Contains(externalDomainList, name) {
 			toDelete = append(toDelete, name)

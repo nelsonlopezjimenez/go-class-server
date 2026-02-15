@@ -1,3 +1,5 @@
+// Package controller implements route handlers to handle calls to the HTTP
+// server for the various routes.
 package controller
 
 // Rocky Connor 420711
@@ -34,8 +36,10 @@ func SendOneLesson(ctx *gin.Context) {
 	// Opens the requested markdown file
 	file, err := fs.ReadFile(fsys, lessonName+".md")
 	if err != nil {
-		fmt.Println("There was an error getting the requested file:", err)
+		fmt.Printf("could not get %v: %v", lessonName, err)
 		// serverLog.Panicln("There was an error getting the requested file:", err)
+		ctx.JSON(500, fmt.Errorf("could not get %v: %w", lessonName, err))
+		return
 	}
 
 	ctx.JSON(200, string(file))
@@ -112,13 +116,15 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 	case "update":
 		consoleOutputBytes, err := external.GitPull(filePath.Websites + "/" + submodule)
 		if err != nil {
-			fmt.Printf("err.Error() pull: %v\n", err.Error())
+			fmt.Printf("Could not download new files: %v\n", err.Error())
+
 			ctx.JSON(500, err.Error())
 			return
 		}
 		err = external.UpdateSingleInfo(submodule)
 		if err != nil {
-			fmt.Printf("err.Error() upSing: %v\n", err.Error())
+			fmt.Printf("Could not update site data: %v\n", err.Error())
+
 			ctx.JSON(500, err.Error())
 			return
 		}
@@ -126,7 +132,7 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 	case "install":
 		consoleOutputBytes, err := external.GitClone(filePath.Websites, util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
 		if err != nil {
-			fmt.Println("[main]", err)
+			fmt.Printf("Could not download %v: %v\n", submodule, err.Error())
 
 			ctx.JSON(500, err.Error())
 			return
@@ -134,7 +140,7 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 
 		err = external.UpdateSingleInfo(submodule)
 		if err != nil {
-			fmt.Printf("err.Error() upSing: %v\n", err.Error())
+			fmt.Printf("Could not update %v: %v\n", submodule, err.Error())
 			ctx.JSON(500, err.Error())
 			return
 		}
@@ -145,6 +151,7 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 		err := util.DeleteSite(filePath.Websites + "/" + submodule)
 		if err != nil {
 			consoleOutput = err.Error()
+			fmt.Println("Could not delete ", submodule, ":", err)
 		}
 	default:
 		ctx.Status(403)

@@ -114,9 +114,9 @@ func main() {
 	go func() {
 		// Starts the server on the specified port
 		serverLog.Printf("Server running on %v", PORT)
-		svrErr := server.ListenAndServe()
-		if svrErr != nil && !errors.Is(svrErr, http.ErrServerClosed) {
-			serverLog.Println("Error in the server:", svrErr)
+		err := server.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverLog.Println("Error in the server:", err)
 		}
 	}()
 

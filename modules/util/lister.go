@@ -198,10 +198,17 @@ func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) Lesson
 //
 // Returns an instance of a RootDir type from the supplied path passed to fn
 func MakeRootDir(dir string) RootDir {
+	defer func() {
+		err := recover()
+		if err != nil {
+			fmt.Printf("Some of the features may not work right: %v", err)
+		}
+	}()
 	root := os.DirFS(dir)
 	rootDir, err := fs.ReadDir(root, ".")
 	if err != nil {
-		fmt.Println("There was an error opening the dir", err)
+		// fmt.Println("There was an error opening the dir", err)
+		log.Panicf("could not create the RootDir struct: %v", err)
 	}
 
 	return RootDir{Root: dir, DirEntry: rootDir}

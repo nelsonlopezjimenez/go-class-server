@@ -1,5 +1,8 @@
-// Rocky Connor 420711
+// Package update implements update functions to ensure
+// updated content on the local system.
 package update
+
+// Rocky Connor 420711
 
 import (
 	"fmt"
@@ -23,7 +26,7 @@ type NetworkPinger struct {
 }
 
 type IPInfo struct {
-	IP          string
+	IP          net.IP
 	isConnected bool
 }
 
@@ -47,14 +50,10 @@ var ipData IPInfo
 func (np NetworkPinger) Update() {
 	ipData = GetLocalIP()
 	if ipData.isConnected {
-		// err := external.UpdateSiteMetaData()
-		// if err != nil {
-		// 	updateLogger.Println(err)
-		// }
+		updateLogger.Println("IP Address is: ", ipData.IP.To4().String())
 		err := updateClassResources()
 		if err != nil {
-			fmt.Println("I'm an error!")
-			updateLogger.Println(err)
+			updateLogger.Printf("Class Content failed to update: %v", err)
 		}
 	}
 
@@ -65,16 +64,16 @@ func (np NetworkPinger) Update() {
 	checkInterval := time.NewTicker(time.Duration(np.Timeout) * interval)
 	hasCheckedDeps := false
 	if ipData.isConnected {
-		// err := external.UpdateSiteMetaData()
-		// if err != nil {
-		// 	updateLogger.Println(err)
-		// }
-		checkForDependencies(np.Url)
-		err := updateClassResources()
+		err := checkForDependencies(np.Url)
 		if err != nil {
-			updateLogger.Println(err)
+			updateLogger.Println("[WARN]: Checking for dependencies failed:", err)
+		} else {
+			hasCheckedDeps = true
 		}
-		hasCheckedDeps = true
+		err = updateClassResources()
+		if err != nil {
+			updateLogger.Printf("Class Content failed to update: %v", err)
+		}
 	}
 	for range checkInterval.C {
 		ipData = GetLocalIP()
@@ -85,7 +84,8 @@ func (np NetworkPinger) Update() {
 				// external.UpdateSiteMetaData()
 				err := updateClassResources()
 				if err != nil {
-					updateLogger.Println(err)
+					updateLogger.Printf("Class Content failed to update: %v", err)
+
 				}
 			}
 		}
@@ -98,7 +98,7 @@ func (np NetworkPinger) Update() {
 //
 // Checks if directory named 'data' exists. If it does not, it runs the git clone
 // command to clone the monorepo from Gitea.
-func checkForDependencies(url string) {
+func checkForDependencies(url string) error {
 	checkUserConfig()
 	_, dirErr := os.Stat(util.GetDepPath())
 	if dirErr != nil {
@@ -108,6 +108,8 @@ func checkForDependencies(url string) {
 				updateLogger.Println(err)
 			}
 			updateLogger.Printf("%s", output)
+		} else {
+			return fmt.Errorf("could not create ClassServerResources: %w", dirErr)
 		}
 
 	}
@@ -119,8 +121,11 @@ func checkForDependencies(url string) {
 			if err != nil {
 				updateLogger.Println("Creating websites dir:", err)
 			}
+		} else {
+			return fmt.Errorf("could not create websites directory: %w", websitesErr)
 		}
 	}
+	return nil
 }
 
 func updateClassResources() error {
@@ -140,23 +145,22 @@ func updateClassResources() error {
 // connection without sending get requests to the Gitea server over and over
 func GetLocalIP() IPInfo {
 
-	Info := IPInfo{"", false}
+	Info := IPInfo{nil, false}
 	networkInterfaces, err := net.Interfaces()
 	if err != nil {
-		fmt.Println("[IP Finder]: Could not get interfaces")
+		updateLogger.Println("[WARN]: Could not get network interfaces")
 	}
 
 	for _, networkInterface := range networkInterfaces {
 		addrs, err := networkInterface.Addrs()
 		if err != nil {
-			fmt.Println("[IP Finder]: Could not get addresses")
+			updateLogger.Println("[WARN]: Could not get IP addresses")
 		}
 
 		for _, addr := range addrs {
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 				if ipnet.IP.To4() != nil {
-					fmt.Println()
-					Info = IPInfo{ipnet.IP.String(), true}
+					Info = IPInfo{ipnet.IP, true}
 				}
 			}
 		}
@@ -187,6 +191,15 @@ func retryCommand(ge GitError) {
 }
 
 func checkUserConfig() {
+	defer func() {
+		if err := recover(); err != nil {
+			updateLogger.Fatal("A serious issue has occurred:", err)
+		}
+	}()
+	_, err := exec.LookPath("git")
+	if err != nil {
+		panic("Git is not installed on your system.")
+	}
 	userName := os.Getenv("USERNAME")
 	for Key, Value := range map[string]string{
 		"user.name":  userName,
@@ -194,7 +207,7 @@ func checkUserConfig() {
 	} {
 		err := command.CheckConfigKeyIsSet(Key, Value)
 		if err != nil {
-			fmt.Println("[cUC]:", err)
+			panic("Failed to set git username and email")
 		}
 	}
 }
