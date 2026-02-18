@@ -9,7 +9,6 @@ import (
 	"localhost/CIS/modules/command"
 	"localhost/CIS/modules/external"
 
-	// "localhost/CIS/modules/external"
 	"localhost/CIS/modules/util"
 	"log"
 	"net"
@@ -36,7 +35,7 @@ type GitError struct {
 	ErrorWrapped error
 }
 
-var websitesPath = util.GetOSPaths().Websites
+var websitesPath = util.GetOSPaths()["websites"]
 
 // Creates a logger instance specifically for the update functions to inform user of update related events
 var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)

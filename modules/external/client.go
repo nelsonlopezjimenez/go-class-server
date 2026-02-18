@@ -39,7 +39,7 @@ type WebsiteInfo struct {
 	Info      `json:"meta"`
 }
 
-var websites string = util.GetOSPaths().Websites
+var websites string = util.GetOSPaths()["websites"]
 
 // getMetaFromGitea
 //
@@ -197,7 +197,7 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 	for _, dirent := range localWebsitesContents {
 		if !slices.Contains(classSites, dirent) {
 			orphanMeta := Info{}
-			fileInfo, err := os.Stat(util.GetOSPaths().Websites + "/" + dirent)
+			fileInfo, err := os.Stat(websites + "/" + dirent)
 			if err == nil {
 				orphanMeta = Info{
 					int(fileInfo.Size()),
@@ -208,7 +208,7 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 				}
 			}
 			index := ""
-			orphanRoot := util.MakeRootDir(util.GetOSPaths().Websites + "/" + dirent)
+			orphanRoot := util.MakeRootDir(websites + "/" + dirent)
 			orphanRoot.FindIndex(func(path string, ent fs.DirEntry) {
 				index = path + "/" + ent.Name()
 
@@ -421,12 +421,10 @@ func UpdateSingleInfo(domainUpdated string) error {
 }
 
 func makeWebsiteInfo(meta MetaData) WebsiteInfo {
-
-	filePath := util.GetOSPaths().Websites + "/" + meta.Name
 	index := ""
-	_, err := os.Stat(filePath)
+	_, err := os.Stat(websites)
 	if err == nil {
-		websiteRoot := util.MakeRootDir(filePath)
+		websiteRoot := util.MakeRootDir(websites)
 		websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
 			index = path + "/" + ent.Name()
 		})

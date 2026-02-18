@@ -10,16 +10,11 @@ import (
 	"runtime"
 )
 
-type FilePath struct {
-	Websites   string
-	CFC        string
-	Videos     string
-	ServerPath string
-	Public     string
-}
+type FilePath = map[string]string
 
 //go:embed cis
 var build embed.FS
+var FilePathMap FilePath
 
 // GetIndex
 //
@@ -52,12 +47,33 @@ func GetFileSystemHandler() (http.FileSystem, error) {
 func GetOSPaths() FilePath {
 	switch runtime.GOOS {
 	case "windows":
-		return FilePath{"C:/websites", "C:/Users/Public/CANVAS_FILE_CACHES", "C:/Users/Public/Videos", "C:/Users/Public/classServer", "C:/Users/Public"}
+		return FilePath{
+			"websites":           "C:/websites",
+			"CANVAS_FILE_CACHES": "C:/Users/Public/CANVAS_FILE_CACHES",
+			"Videos":             "C:/Users/Public/Videos",
+			"serverPath":         "C:/Users/Public/classServer",
+			"Public":             "C:/Users/Public",
+			"static":             "C:/Users/Public/classServer/static",
+		}
 	case "darwin":
-		return FilePath{"/Users/Shared/websites", "/Users/Shared/CANVAS_FILE_CACHES", "/Users/Shared/Videos", "Users/Shared/ClassServer", "Users/Shared"}
+		return FilePath{
+			"websites":           "/Users/Shared/websites",
+			"CANVAS_FILE_CACHES": "/Users/Shared/CANVAS_FILE_CACHES",
+			"Videos":             "/Users/Shared/Videos",
+			"serverPath":         "Users/Shared/ClassServer",
+			"Public":             "Users/Shared",
+			"static":             "Users/Shared/ClassServer/static",
+		}
 	default:
 		usr, _ := os.UserHomeDir()
-		return FilePath{usr + "/websites", usr + "/CANVAS_FILE_CACHES", usr + "/Videos", usr + "/classServer", usr}
+		return FilePath{
+			"websites":           usr + "/websites",
+			"CANVAS_FILE_CACHES": usr + "/CANVAS_FILE_CACHES",
+			"Videos":             usr + "/Videos",
+			"serverPath":         usr + "/classServer",
+			"Public":             usr,
+			"static":             usr + "classServer/static",
+		}
 	}
 }
 
@@ -122,8 +138,9 @@ func GetDepPath() string {
 	return depPath
 }
 
-func CreateSymlink(linkName string) error {
-	err := os.Symlink(GetOSPaths().CFC, GetOSPaths().ServerPath+linkName)
+func CreateSymlink(linkName string, linkTarget string) error {
+
+	err := os.Symlink(linkName, linkTarget)
 	if err != nil {
 		return fmt.Errorf("there was an error creating the link to %s: %w", linkName, err)
 	}
@@ -131,10 +148,11 @@ func CreateSymlink(linkName string) error {
 }
 
 func CheckForSymlink(linkName string) error {
-	_, err := os.Stat(GetOSPaths().ServerPath + linkName)
+	osPaths := GetOSPaths()
+	_, err := os.Stat(osPaths["static"] + "/" + linkName)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return CreateSymlink(linkName)
+			return CreateSymlink(osPaths[linkName], osPaths["static"]+"/"+linkName)
 		} else {
 			return fmt.Errorf("could not check for link %s: %w", linkName, err)
 		}

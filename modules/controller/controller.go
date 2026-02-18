@@ -114,7 +114,7 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 	var consoleOutput string
 	switch command {
 	case "update":
-		consoleOutputBytes, err := external.GitPull(filePath.Websites + "/" + submodule)
+		consoleOutputBytes, err := external.GitPull(filePath["websites"] + "/" + submodule)
 		if err != nil {
 			fmt.Printf("Could not download new files: %v\n", err.Error())
 
@@ -130,7 +130,7 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 		}
 		consoleOutput = string(consoleOutputBytes)
 	case "install":
-		consoleOutputBytes, err := external.GitClone(filePath.Websites, util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
+		consoleOutputBytes, err := external.GitClone(filePath["websites"], util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
 		if err != nil {
 			fmt.Printf("Could not download %v: %v\n", submodule, err.Error())
 
@@ -148,7 +148,7 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 		consoleOutput = string(consoleOutputBytes)
 	case "delete":
 		// delete specified domain dir
-		err := util.DeleteSite(filePath.Websites + "/" + submodule)
+		err := util.DeleteSite(filePath["websites"] + "/" + submodule)
 		if err != nil {
 			consoleOutput = err.Error()
 			fmt.Println("Could not delete ", submodule, ":", err)

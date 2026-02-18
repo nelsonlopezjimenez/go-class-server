@@ -7,8 +7,6 @@ package main
 // All external packages must be declared next
 // Every package that is declared in the imports must be used
 import (
-	// "bytes"
-
 	"context"
 	"errors"
 	"fmt"
@@ -68,24 +66,24 @@ func main() {
 	}
 	router.StaticFS("/assets", fsys)
 	router.Static("/images", util.GetDepPath()+"/images")
-	_, staticErr := os.Stat(filePath.ServerPath + "/static")
+	_, staticErr := os.Stat(filePath["static"])
 	if staticErr != nil {
 
 		if os.IsNotExist(staticErr) {
 			fmt.Println("staticErr:", staticErr)
-			err := os.Mkdir(filePath.ServerPath+"/static", 0777)
+			err := os.Mkdir(filePath["static"], 0777)
 			if err != nil {
 				serverLog.Println("Error creating /static:", err)
 			}
 		}
 	}
 
-	util.CheckForSymlink("/static/Public")
-	util.CheckForSymlink("/static/CANVAS_FILE_CACHES")
-	util.CheckForSymlink("/static/Videos")
+	util.CheckForSymlink("Public")
+	util.CheckForSymlink("CANVAS_FILE_CACHES")
+	util.CheckForSymlink("Videos")
 
-	router.StaticFS("/static", gin.Dir(filePath.ServerPath+"/static", true))
-	websitesGroup.StaticFS("/", gin.Dir(filePath.Websites, true))
+	router.StaticFS("/static", gin.Dir(filePath["serverPath"]+"/static", true))
+	websitesGroup.StaticFS("/", gin.Dir(filePath["websites"], true))
 
 	Gitea := update.NetworkPinger{Url: util.LoadEnv("UPDATE_IP"), Timeout: 10}
 
