@@ -73,8 +73,8 @@ func (dir RootDir) RecursiveSearchByExt(ext string, cb func(path string, fileNam
 	dirEnts := dir.DirEntry
 
 	for _, entry := range dirEnts {
-		deeperLook := MakeRootDir(dir.Root + "/" + entry.Name())
 		if !entry.Type().IsRegular() {
+			deeperLook := MakeRootDir(dir.Root + "/" + entry.Name())
 			deeperLook.RecursiveSearchByExt(ext, cb)
 		}
 		if findFileExt(entry.Name(), ext) && entry.Type().IsRegular() {
