@@ -422,9 +422,9 @@ func UpdateSingleInfo(domainUpdated string) error {
 
 func makeWebsiteInfo(meta MetaData) WebsiteInfo {
 	index := ""
-	_, err := os.Stat(websites)
+	_, err := os.Stat(websites + "/" + meta.Name)
 	if err == nil {
-		websiteRoot := util.MakeRootDir(websites)
+		websiteRoot := util.MakeRootDir(websites + "/" + meta.Name)
 		websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
 			index = path + "/" + ent.Name()
 		})
