@@ -1,5 +1,7 @@
 package util
 
+// Rocky Connor 420711
+
 import (
 	"strings"
 )

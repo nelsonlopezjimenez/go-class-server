@@ -34,12 +34,6 @@ This Go server provides a platform for delivering educational content, primarily
     ```
 
 ## Configuration
-
-The server's behavior is controlled through several configuration options:
-
-- **Port:** The port the server listens on. Defaults to `22022`. Change this in the command line with the -p flag.
-- **Dev Mode:** When set to `true`, the server runs in development mode. This enables debug logging and displays helpful information. It also increases the frequency of updates of classroom resources to every 10 seconds.
-
 ### Environment Variables
 
 Environment variables will override the hardcoded defaults if they are present. This feature was included to allow for development on a mock network. To change the defaults for these variables they should be edited in the `environment.go` file in the `util` package.
@@ -52,6 +46,7 @@ As of version 2.2.3 there is significant overlap between these variables and thi
 - UPDATE_IP: The root address for course content
 - GIT_INSTALL_ADDR: The address for the user or organization hosting offline website repos
 - WEBSITES_REPO_ADDR: The address to be queried for a single website meta
+- CIS_CLASS_SERVER_PORT: The port the server will listen on (default is 22022)
 
 ## Running the Server
 
@@ -60,9 +55,6 @@ As of version 2.2.3 there is significant overlap between these variables and thi
     ```sh
     go run main.go [options]
     ```
-
-    - `-p <port>`: Specifies the port number. Default is '22022.
-    - `-dev`: Set to `true` to enable development mode (debug logging, etc.). Default is `false`.
 
 ## Usage
 

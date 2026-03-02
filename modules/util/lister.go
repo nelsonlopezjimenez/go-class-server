@@ -1,5 +1,6 @@
-// Rocky Connor 420711
 package util
+
+// Rocky Connor 420711
 
 import (
 	"fmt"
@@ -14,7 +15,8 @@ import (
 )
 
 type RootDir struct {
-	Root string
+	Root     string
+	DirEntry []os.DirEntry
 }
 
 type LinkList struct {
@@ -46,14 +48,10 @@ type LessonInfo struct {
 // for the first index.html file in its subdirectories and pass any found
 // to a callback for user defined processing.
 func (dir RootDir) FindIndex(cb func(path string, ent fs.DirEntry)) {
-	root := os.DirFS(dir.Root)
-	rootDir, err := fs.ReadDir(root, ".")
-	if err != nil {
-		fmt.Println("There was an error opening the dir", err)
-	}
+	dirEnts := dir.DirEntry
 
 	var haveIndex bool = false
-	for _, entry := range rootDir {
+	for _, entry := range dirEnts {
 		if entry.Type().IsRegular() && entry.Name() == "index.html" {
 			haveIndex = true
 
@@ -62,26 +60,22 @@ func (dir RootDir) FindIndex(cb func(path string, ent fs.DirEntry)) {
 	}
 
 	if !haveIndex {
-		for _, entry := range rootDir {
+		for _, entry := range dirEnts {
 			if !entry.Type().IsRegular() && !haveIndex {
-				deeperLook := RootDir{dir.Root + "/" + entry.Name()}
+				deeperLook := MakeRootDir(dir.Root + "/" + entry.Name())
 				deeperLook.FindIndex(cb)
 			}
 		}
 	}
 }
 
-func (dir RootDir) RecursiveSearch(ext string, cb func(path string, fileName string)) {
-	root := os.DirFS(dir.Root)
-	rootDir, err := fs.ReadDir(root, ".")
-	if err != nil {
-		fmt.Println("There was an error opening the dir", err)
-	}
+func (dir RootDir) RecursiveSearchByExt(ext string, cb func(path string, fileName string)) {
+	dirEnts := dir.DirEntry
 
-	for _, entry := range rootDir {
-		deeperLook := RootDir{dir.Root + "/" + entry.Name()}
+	for _, entry := range dirEnts {
 		if !entry.Type().IsRegular() {
-			deeperLook.RecursiveSearch(ext, cb)
+			deeperLook := MakeRootDir(dir.Root + "/" + entry.Name())
+			deeperLook.RecursiveSearchByExt(ext, cb)
 		}
 		if findFileExt(entry.Name(), ext) && entry.Type().IsRegular() {
 			currentDir := strings.Split(dir.Root, "/")
@@ -92,12 +86,8 @@ func (dir RootDir) RecursiveSearch(ext string, cb func(path string, fileName str
 
 // This fn returns an array of strings representing the contents of the RootDir passed to it
 func (dir RootDir) ListBuilder() []string {
-	fsys := os.DirFS(dir.Root)
 	linkList := []string{}
-	list, err := fs.ReadDir(fsys, ".")
-	if err != nil {
-		fmt.Println(err)
-	}
+	list := dir.DirEntry
 
 	for _, ent := range list {
 		if ent.IsDir() && !strings.HasPrefix(ent.Name(), ".") {
@@ -114,14 +104,10 @@ func (dir RootDir) ListBuilder() []string {
 // and returns true if the directory or a child contains
 // an index.html file. If it does not, the method returns false
 func (dir RootDir) HasIndex() bool {
-	root := os.DirFS(dir.Root)
-	rootDir, err := fs.ReadDir(root, ".")
-	if err != nil {
-		fmt.Println("There was an error opening the dir", err)
-	}
+	dirEnts := dir.DirEntry
 
 	var haveIndex bool = false
-	for _, entry := range rootDir {
+	for _, entry := range dirEnts {
 		if entry.Type().IsRegular() && entry.Name() == "index.html" {
 			haveIndex = true
 
@@ -130,9 +116,9 @@ func (dir RootDir) HasIndex() bool {
 	}
 
 	if !haveIndex {
-		for _, entry := range rootDir {
+		for _, entry := range dirEnts {
 			if !entry.Type().IsRegular() && !haveIndex {
-				deeperLook := RootDir{dir.Root + "/" + entry.Name()}
+				deeperLook := MakeRootDir(dir.Root + "/" + entry.Name())
 				deeperLook.HasIndex()
 
 			}
@@ -141,6 +127,9 @@ func (dir RootDir) HasIndex() bool {
 	return haveIndex
 }
 
+// findFileExt
+//
+// Return true if the filename ends in ext
 func findFileExt(name string, ext string) bool {
 	re := regexp.MustCompile(ext + "$")
 
@@ -154,28 +143,33 @@ func findFileExt(name string, ext string) bool {
 // It takes MD files with front matter and parses it into a go struct that can
 // then be used as needed. The struct is typically sent to the client at a json obj.
 func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) LessonInfo {
+	defer func() {
+		err := recover()
+		if err != nil {
+			serverLog.Println("Failed to create the LessonInfo:", err)
+		}
+	}()
 	var lesson LessonInfo
 	var metaData Meta
 
 	// creates a fs.FS  for the information directory
 	fsys := os.DirFS("./data/markdown/lessons/" + dir)
-	// Opens the requested markdown file
-	// TODO: Should be after os.Stat
-	file, err := fs.ReadFile(fsys, lessonFile)
-	if err != nil {
-		serverLog.Panicln("There was an error getting the requested file:", err)
-	}
 
 	// Checks to make sure the file exists. If it does, it populates the CreatedAt, FileSize,
 	// and Section fields.
 	fileInfo, err := os.Stat("./data/markdown/lessons/" + dir + "/" + lessonFile)
 	if err != nil {
-		// TODO: Needs to return err and have err handling rather than just swallowing.
-		serverLog.Println(err)
+		panic("./data/markdown/lessons/" + dir + "/" + lessonFile + "does not exist!")
 	} else {
 		lesson.CreatedAt = fileInfo.ModTime()
 		lesson.FileSize = fileInfo.Size()
 		lesson.Section = dir
+	}
+
+	// Opens the requested markdown file
+	file, err := fs.ReadFile(fsys, lessonFile)
+	if err != nil {
+		serverLog.Panicln("There was an error getting the requested file:", err)
 	}
 
 	// Converts the returned []byte into a string for manipulation
@@ -200,6 +194,22 @@ func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) Lesson
 	return lesson
 }
 
+// MakeRootDir
+//
+// Returns an instance of a RootDir type from the supplied path passed to fn
 func MakeRootDir(dir string) RootDir {
-	return RootDir{Root: dir}
+	defer func() {
+		err := recover()
+		if err != nil {
+			fmt.Printf("Some of the features may not work right: %v", err)
+		}
+	}()
+	root := os.DirFS(dir)
+	rootDir, err := fs.ReadDir(root, ".")
+	if err != nil {
+		// fmt.Println("There was an error opening the dir", err)
+		log.Panicf("could not create the RootDir struct: %v", err)
+	}
+
+	return RootDir{Root: dir, DirEntry: rootDir}
 }

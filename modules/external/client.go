@@ -1,3 +1,6 @@
+// Package external handles all logic to do with connecting to Gitea and git handling.
+// This is where all website data comes from. info.json gets built from this package as
+// well.
 package external
 
 import (
@@ -36,7 +39,7 @@ type WebsiteInfo struct {
 	Info      `json:"meta"`
 }
 
-var websites string = util.GetOSPaths().Websites
+var websites string = util.GetOSPaths()["websites"]
 
 // getMetaFromGitea
 //
@@ -81,7 +84,12 @@ func processMetaBytesFromGitea(metaBytes []byte) ([]WebsiteInfo, error) {
 //
 // If there is no info.json file located in the websites folder,
 // this fn will create it and save the website metadata to file.
-func createLocalMeta() error {
+func createLocalMeta() (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("something went wrong creating info.json: %w", err)
+		}
+	}()
 	metaBytes, err := getMetaFromGitea()
 	if err != nil {
 		return err
@@ -143,7 +151,7 @@ func loadMetaFromFile() ([]WebsiteInfo, error) {
 }
 
 func BuildWebsiteList() ([]WebsiteInfo, error) {
-	localWebsitesDir := util.RootDir{Root: websites}
+	localWebsitesDir := util.MakeRootDir(websites)
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 
 	err := UpdateSiteMetaData()
@@ -179,7 +187,7 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 // it to the current website list sent to the front end.
 func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 	var classSites []string
-	localWebsitesDir := util.RootDir{Root: websites}
+	localWebsitesDir := util.MakeRootDir(websites)
 
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 	for _, external := range siteList {
@@ -189,7 +197,7 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 	for _, dirent := range localWebsitesContents {
 		if !slices.Contains(classSites, dirent) {
 			orphanMeta := Info{}
-			fileInfo, err := os.Stat(util.GetOSPaths().Websites + "/" + dirent)
+			fileInfo, err := os.Stat(websites + "/" + dirent)
 			if err == nil {
 				orphanMeta = Info{
 					int(fileInfo.Size()),
@@ -200,7 +208,7 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 				}
 			}
 			index := ""
-			orphanRoot := util.RootDir{Root: util.GetOSPaths().Websites + "/" + dirent}
+			orphanRoot := util.MakeRootDir(websites + "/" + dirent)
 			orphanRoot.FindIndex(func(path string, ent fs.DirEntry) {
 				index = path + "/" + ent.Name()
 
@@ -268,7 +276,6 @@ func UpdateSiteMetaData() error {
 
 	toDelete := []string{}
 
-	println(len(toDelete))
 	for _, name := range localDomainList {
 		if !slices.Contains(externalDomainList, name) {
 			toDelete = append(toDelete, name)
@@ -414,12 +421,10 @@ func UpdateSingleInfo(domainUpdated string) error {
 }
 
 func makeWebsiteInfo(meta MetaData) WebsiteInfo {
-
-	filePath := util.GetOSPaths().Websites + "/" + meta.Name
 	index := ""
-	_, err := os.Stat(filePath)
+	_, err := os.Stat(websites + "/" + meta.Name)
 	if err == nil {
-		websiteRoot := util.MakeRootDir(filePath)
+		websiteRoot := util.MakeRootDir(websites + "/" + meta.Name)
 		websiteRoot.FindIndex(func(path string, ent fs.DirEntry) {
 			index = path + "/" + ent.Name()
 		})

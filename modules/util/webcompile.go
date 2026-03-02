@@ -1,5 +1,6 @@
+package util
+
 // Rocky Connor 420711
-package CIS
 
 import (
 	"fmt"
@@ -8,8 +9,17 @@ import (
 	"strings"
 )
 
-// RunCode takes the  supplied code and code language and executes it.
-func RunCode(code string, lang string) (_ []byte, err error) {
+// ! We should find a way to execute user code in an isolated environment!
+// ! WASM looks like the way to meet this goal
+// Consider using Go's templating engine to return an html page to W3S
+// that gets passed the user code and given to the WASM module.
+// TODO: Use pyodide to execute user supplied python. This is also how
+// fCC runs and checks the user code in their python curriculum.
+
+// RunUserCode
+//
+// RunUserCode takes the  supplied code and code language and executes it.
+func RunUserCode(code string, lang string) (_ []byte, err error) {
 	// defer will wait to run the specified code until the fn finishes execution
 	defer func() {
 		if err != nil {

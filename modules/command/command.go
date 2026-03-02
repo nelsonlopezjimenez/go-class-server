@@ -24,7 +24,7 @@ func (e CmdError) Error() string {
 	if e.errMsg == "" {
 		e.errMsg = fmt.Sprint(e.err, e.stderr)
 	}
-	return e.errMsg
+	return (e.errMsg)
 }
 
 func (e CmdError) StdErr() string {
