@@ -233,7 +233,7 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 func SendAllSites() ([]WebsiteInfo, error) {
 	external, err := BuildWebsiteList()
 	if err != nil {
-		return nil, err
+		fmt.Println("[ERROR]: ", err)
 	}
 
 	allSites, err := processOrphanSites(external)
