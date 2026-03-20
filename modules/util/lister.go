@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"localhost/CIS/modules/logger"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -84,18 +86,19 @@ func (dir RootDir) RecursiveSearchByExt(ext string, cb func(path string, fileNam
 	}
 }
 
-// This fn returns an array of strings representing the contents of the RootDir passed to it
-func (dir RootDir) ListBuilder() []string {
-	linkList := []string{}
+// This fn returns a hash map representing the contents of the RootDir passed to it
+func (dir RootDir) ListBuilder() map[string]bool {
+	domainMap := make(map[string]bool)
 	list := dir.DirEntry
 
 	for _, ent := range list {
 		if ent.IsDir() && !strings.HasPrefix(ent.Name(), ".") {
-			linkList = append(linkList, ent.Name())
+			// linkList = append(linkList, ent.Name())
+			domainMap[ent.Name()] = true
 		}
 	}
 
-	return linkList
+	return domainMap
 }
 
 //	(RootDir).HasIndex
@@ -142,11 +145,12 @@ func findFileExt(name string, ext string) bool {
 // Creates and returns a struct with the data for the specified markdown file.
 // It takes MD files with front matter and parses it into a go struct that can
 // then be used as needed. The struct is typically sent to the client at a json obj.
-func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) LessonInfo {
+func MakeLessonInfo(dir string, lessonFile string) LessonInfo {
 	defer func() {
 		err := recover()
 		if err != nil {
-			serverLog.Println("Failed to create the LessonInfo:", err)
+			// serverLog.Println("Failed to create the LessonInfo:", err)
+			logger.Log(logger.ErrorLevel, fmt.Sprintf("Failed to create the LessonInfo: %v", err))
 		}
 	}()
 	var lesson LessonInfo
@@ -169,7 +173,8 @@ func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) Lesson
 	// Opens the requested markdown file
 	file, err := fs.ReadFile(fsys, lessonFile)
 	if err != nil {
-		serverLog.Panicln("There was an error getting the requested file:", err)
+		// serverLog.Panicln("There was an error getting the requested file:", err)
+		logger.Log(logger.ErrorLevel, fmt.Sprintf("There was an error getting the requested file: %v", err))
 	}
 
 	// Converts the returned []byte into a string for manipulation
@@ -208,7 +213,7 @@ func MakeRootDir(dir string) RootDir {
 	rootDir, err := fs.ReadDir(root, ".")
 	if err != nil {
 		// fmt.Println("There was an error opening the dir", err)
-		log.Panicf("could not create the RootDir struct: %v", err)
+		log.Panicf("could not create the RootDir struct: %v. the path was %v", err, dir)
 	}
 
 	return RootDir{Root: dir, DirEntry: rootDir}

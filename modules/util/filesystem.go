@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"localhost/CIS/modules/logger"
 	"net/http"
 	"os"
 	"os/exec"
@@ -125,7 +126,8 @@ func GetDepPath() string {
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Cannot get CWD:", err)
+		// fmt.Println("Cannot get CWD:", err)
+		logger.Log(logger.WarnLevel, fmt.Sprintf("Unable to get CWD: %v. Some features may not work properly.", err))
 	}
 	_, dirErr := os.Stat(cwd + "/data")
 
