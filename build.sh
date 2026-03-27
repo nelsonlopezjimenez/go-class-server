@@ -10,8 +10,6 @@ git commit -m "v2.3.0"
 ECHO "Preparing to push new binary to remote repo"
 ECHO "Pushing to origin"
 git push -f --progress origin development:main;
-# ECHO "Pushing to MonkeyGoblin"
-# git push -f --progress Monkey development:main
 
 function checkForBinRepo() {
 if ! test -d bin; 
