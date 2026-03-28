@@ -41,6 +41,8 @@ type WebsiteInfo struct {
 
 var websites string = util.GetOSPaths()["websites"]
 
+type HashMap map[string]bool
+
 // getMetaFromGitea
 //
 // Sends a GET request to Gitea's /api/v1/repos route and returns a []byte
@@ -154,7 +156,7 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 	localWebsitesDir := util.MakeRootDir(websites)
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 
-	err := UpdateSiteMetaData()
+	err := UpdateSiteMetaData(localWebsitesContents)
 	if err != nil {
 		fmt.Printf("err.Error(): %v\n", err.Error())
 	}
@@ -164,11 +166,18 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 		return nil, err
 	}
 
+	// Create hash map to store the local websites for quick searching
+	domainMap := make(HashMap)
+
+	for _, website := range localData {
+		domainMap[website.Domain] = true
+	}
+
 	for i, website := range localData {
 		if website.Topics == nil {
 			localData[i].Topics = []string{}
 		}
-		if slices.Contains(localWebsitesContents, website.Domain) {
+		if localWebsitesContents[website.Domain] {
 			if localData[i].State == "update_needed" {
 				localData[i].State = "update_needed"
 			} else {
@@ -186,18 +195,18 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 // not match the list available on Gitea, it creates orphan WebsiteInfo and appends
 // it to the current website list sent to the front end.
 func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
-	var classSites []string
+	classSites := make(HashMap)
 	localWebsitesDir := util.MakeRootDir(websites)
 
 	localWebsitesContents := localWebsitesDir.ListBuilder()
 	for _, external := range siteList {
-		classSites = append(classSites, external.Domain)
+		classSites[external.Domain] = true
 	}
 
-	for _, dirent := range localWebsitesContents {
-		if !slices.Contains(classSites, dirent) {
+	for key, _ := range localWebsitesContents {
+		if !classSites[key] {
 			orphanMeta := Info{}
-			fileInfo, err := os.Stat(websites + "/" + dirent)
+			fileInfo, err := os.Stat(websites + "/" + key)
 			if err == nil {
 				orphanMeta = Info{
 					int(fileInfo.Size()),
@@ -208,13 +217,13 @@ func processOrphanSites(siteList []WebsiteInfo) ([]WebsiteInfo, error) {
 				}
 			}
 			index := ""
-			orphanRoot := util.MakeRootDir(websites + "/" + dirent)
+			orphanRoot := util.MakeRootDir(websites + "/" + key)
 			orphanRoot.FindIndex(func(path string, ent fs.DirEntry) {
 				index = path + "/" + ent.Name()
 
 			})
 			orphanedSiteInfo := WebsiteInfo{
-				dirent,
+				key,
 				index,
 				"orphan",
 				orphanMeta,
@@ -250,7 +259,7 @@ func SendAllSites() ([]WebsiteInfo, error) {
 // Checks the local list against a fresh copy of the metadata
 // from Gitea. Updates info.json and sets the state of any entry
 // to "need_update" as necessary.
-func UpdateSiteMetaData() error {
+func UpdateSiteMetaData(installedSites HashMap) error {
 	local, err := loadMetaFromFile()
 	if err != nil {
 		return err
@@ -272,13 +281,13 @@ func UpdateSiteMetaData() error {
 		return err
 	}
 
-	localDomainList, externalDomainList := listOfDomains(local, processedExt)
+	localDomainList, externalDomainList := domainHashes(local, processedExt)
 
 	toDelete := []string{}
 
-	for _, name := range localDomainList {
-		if !slices.Contains(externalDomainList, name) {
-			toDelete = append(toDelete, name)
+	for localKey, _ := range localDomainList {
+		if !externalDomainList[localKey] {
+			toDelete = append(toDelete, localKey)
 		}
 	}
 
@@ -292,9 +301,9 @@ func UpdateSiteMetaData() error {
 
 	toAdd := []string{}
 
-	for _, name := range externalDomainList {
-		if !slices.Contains(localDomainList, name) {
-			toAdd = append(toAdd, name)
+	for giteaSite, _ := range externalDomainList {
+		if !localDomainList[giteaSite] {
+			toAdd = append(toAdd, giteaSite)
 		}
 	}
 
@@ -309,10 +318,13 @@ func UpdateSiteMetaData() error {
 	}
 
 	for i, localSite := range local {
+		// if either size or updated date differ between local data
+		// and installedSites hash map returns true (site is installed)
+		// set state to update_needed and break, otherwise continue.
 		for _, externalSite := range processedExt {
 			if !reflect.DeepEqual(localSite, externalSite) {
 				if localSite.Domain == externalSite.Domain {
-					if localSite.Size != externalSite.Size || localSite.Updated_At != externalSite.Updated_At {
+					if localSite.Size != externalSite.Size && installedSites[localSite.Domain] || localSite.Updated_At != externalSite.Updated_At && installedSites[localSite.Domain] {
 						local[i].State = "update_needed"
 					}
 					local[i].Description = externalSite.Description
@@ -348,16 +360,16 @@ func UpdateSiteMetaData() error {
 	return nil
 }
 
-func listOfDomains(localSlice []WebsiteInfo, externalSlice []WebsiteInfo) ([]string, []string) {
-	var local []string
-	var external []string
+func domainHashes(localSlice []WebsiteInfo, externalSlice []WebsiteInfo) (HashMap, HashMap) {
+	local := make(HashMap)
+	external := make(HashMap)
 
 	for _, site := range localSlice {
-		local = append(local, site.Domain)
+		local[site.Domain] = true
 	}
 
 	for _, site := range externalSlice {
-		external = append(external, site.Domain)
+		external[site.Domain] = true
 	}
 
 	return local, external

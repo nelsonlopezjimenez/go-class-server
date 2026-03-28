@@ -84,18 +84,19 @@ func (dir RootDir) RecursiveSearchByExt(ext string, cb func(path string, fileNam
 	}
 }
 
-// This fn returns an array of strings representing the contents of the RootDir passed to it
-func (dir RootDir) ListBuilder() []string {
-	linkList := []string{}
+// This fn returns a hash map representing the contents of the RootDir passed to it
+func (dir RootDir) ListBuilder() map[string]bool {
+	domainMap := make(map[string]bool)
 	list := dir.DirEntry
 
 	for _, ent := range list {
 		if ent.IsDir() && !strings.HasPrefix(ent.Name(), ".") {
-			linkList = append(linkList, ent.Name())
+			// linkList = append(linkList, ent.Name())
+			domainMap[ent.Name()] = true
 		}
 	}
 
-	return linkList
+	return domainMap
 }
 
 //	(RootDir).HasIndex
@@ -208,7 +209,7 @@ func MakeRootDir(dir string) RootDir {
 	rootDir, err := fs.ReadDir(root, ".")
 	if err != nil {
 		// fmt.Println("There was an error opening the dir", err)
-		log.Panicf("could not create the RootDir struct: %v", err)
+		log.Panicf("could not create the RootDir struct: %v. the path was %v", err, dir)
 	}
 
 	return RootDir{Root: dir, DirEntry: rootDir}
