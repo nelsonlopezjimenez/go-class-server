@@ -6,7 +6,7 @@ cd bin;
 ECHO $PWD;
 ECHO "Preparing to commit";
 git add classServer.exe;
-git commit -m "v2.3.0"
+git commit -m "v2.3.1"
 ECHO "Preparing to push new binary to remote repo"
 ECHO "Pushing to origin"
 git push -f --progress origin development:main;

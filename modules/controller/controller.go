@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"localhost/CIS/modules/external"
+	"localhost/CIS/modules/logger"
 	"localhost/CIS/modules/util"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,7 @@ func SendOneLesson(ctx *gin.Context) {
 	// Opens the requested markdown file
 	file, err := fs.ReadFile(fsys, lessonName+".md")
 	if err != nil {
-		fmt.Printf("could not get %v: %v", lessonName, err)
+		logger.Log(logger.WarnLevel, fmt.Sprintf("could not get %v: %v", lessonName, err))
 		// serverLog.Panicln("There was an error getting the requested file:", err)
 		ctx.JSON(500, fmt.Errorf("could not get %v: %w", lessonName, err))
 		return
@@ -54,8 +55,7 @@ func SendInformationPage(ctx *gin.Context) {
 	// Opens the requested markdown file
 	file, err := fs.ReadFile(fsys, reqInfoPage+".md")
 	if err != nil {
-		fmt.Println("There was an error getting the requested file:", err)
-		// serverLog.Panicln("There was an error getting the requested file:", err)
+		logger.Log(logger.WarnLevel, fmt.Sprintf("There was an error getting the requested file: %v", err))
 	}
 
 	ctx.JSON(200, string(file))
@@ -97,8 +97,7 @@ func HandleUserCode(ctx *gin.Context) {
 	// RunCode is a function imported from the CIS module
 	output, err := util.RunUserCode(code, lang)
 	if err != nil {
-		fmt.Println("there was an error: ", err)
-		// serverLog.Println("there was an error: ", err)
+		logger.Log(logger.DebugLevel, fmt.Sprintf("Error running user supplied code: %v", err))
 	}
 
 	fmt.Fprintf(ctx.Writer, "%s", output)
@@ -109,21 +108,19 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 	type ReturnOutput map[string]string
 	submodule := ctx.Param("submodule")
 	command := ctx.Param("command")
-	fmt.Println(command)
-	// serverLog.Println(command)
 	var consoleOutput string
 	switch command {
 	case "update":
 		consoleOutputBytes, err := external.GitPull(filePath["websites"] + "/" + submodule)
 		if err != nil {
-			fmt.Printf("Could not download new files: %v\n", err.Error())
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not download new files: %v", err))
 
 			ctx.JSON(500, err.Error())
 			return
 		}
-		err = external.UpdateSingleInfo(submodule)
+		err = external.UpdateSingleInfo(submodule, false)
 		if err != nil {
-			fmt.Printf("Could not update site data: %v\n", err.Error())
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not update site data: %v", err.Error()))
 
 			ctx.JSON(500, err.Error())
 			return
@@ -132,15 +129,15 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 	case "install":
 		consoleOutputBytes, err := external.GitClone(filePath["websites"], util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
 		if err != nil {
-			fmt.Printf("Could not download %v: %v\n", submodule, err.Error())
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not download %v: %v", submodule, err))
 
 			ctx.JSON(500, err.Error())
 			return
 		}
 
-		err = external.UpdateSingleInfo(submodule)
+		err = external.UpdateSingleInfo(submodule, false)
 		if err != nil {
-			fmt.Printf("Could not update %v: %v\n", submodule, err.Error())
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not update %v: %v\n", submodule, err.Error()))
 			ctx.JSON(500, err.Error())
 			return
 		}
@@ -151,7 +148,13 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 		err := util.DeleteSite(filePath["websites"] + "/" + submodule)
 		if err != nil {
 			consoleOutput = err.Error()
-			fmt.Println("Could not delete ", submodule, ":", err)
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not delete %v: %v ", submodule, err))
+		}
+		err = external.UpdateSingleInfo(submodule, true)
+		if err != nil {
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not update state of %v: %v", submodule, err.Error()))
+			ctx.JSON(500, err.Error())
+			return
 		}
 	default:
 		ctx.Status(403)

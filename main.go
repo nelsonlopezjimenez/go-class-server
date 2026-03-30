@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"localhost/CIS/modules/controller"
+	"localhost/CIS/modules/logger"
 	"localhost/CIS/modules/update"
 	"localhost/CIS/modules/util"
 
@@ -38,9 +38,7 @@ func main() {
 	PORT := util.LoadEnv("CIS_CLASS_SERVER_PORT")
 
 	// Creates a new logger instance to display info from server
-	serverLog := log.New(os.Stdout, "[Server] ", log.LstdFlags)
-	serverLog.Println("CIS Class Server", releaseVersion, "released on", releaseDate)
-
+	logger.Log(logger.InfoLevel, fmt.Sprintf("CIS Class Server %v released on %v", releaseVersion, releaseDate))
 	// The router var creates the default gin engine instance
 	if !util.IsDevelopment() {
 		gin.SetMode(gin.ReleaseMode)
@@ -62,7 +60,7 @@ func main() {
 	// The following line defines a static asset folder
 	fsys, err := util.GetFileSystemHandler()
 	if err != nil {
-		serverLog.Println("there was an error in the embedded fs:", err)
+		logger.Log(logger.ErrorLevel, fmt.Sprintf("there was an error in the embedded fs: %v", err))
 	}
 	router.StaticFS("/assets", fsys)
 	router.Static("/images", util.GetDepPath()+"/images")
@@ -73,7 +71,7 @@ func main() {
 			fmt.Println("staticErr:", staticErr)
 			err := os.Mkdir(filePath["static"], 0777)
 			if err != nil {
-				serverLog.Println("Error creating /static:", err)
+				logger.Log(logger.WarnLevel, fmt.Sprintf("Error creating /static:%v", err))
 			}
 		}
 	}
@@ -111,10 +109,10 @@ func main() {
 	// shutdown logic after the call to server.ListenAndServe
 	go func() {
 		// Starts the server on the specified port
-		serverLog.Printf("Server running on %v", PORT)
+		logger.Log(logger.InfoLevel, fmt.Sprintf("Server running on %v", PORT))
 		err := server.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serverLog.Println("Error in the server:", err)
+			logger.Log(logger.ErrorLevel, fmt.Sprintf("Error in the server: %v", err))
 		}
 	}()
 
@@ -122,13 +120,13 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	serverLog.Println("Gracefully shutting down the server.")
+	logger.Log(logger.InfoLevel, "Gracefully shutting down the server.")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		serverLog.Fatal("Server forced to shutdown:", err)
+		logger.Log(logger.ErrorLevel, fmt.Sprintf("Server forced to shutdown:%v", err))
 	}
-	serverLog.Println("Server exiting")
+	logger.Log(logger.InfoLevel, "Server exiting")
 }

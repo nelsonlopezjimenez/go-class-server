@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"localhost/CIS/modules/logger"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -143,11 +145,12 @@ func findFileExt(name string, ext string) bool {
 // Creates and returns a struct with the data for the specified markdown file.
 // It takes MD files with front matter and parses it into a go struct that can
 // then be used as needed. The struct is typically sent to the client at a json obj.
-func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) LessonInfo {
+func MakeLessonInfo(dir string, lessonFile string) LessonInfo {
 	defer func() {
 		err := recover()
 		if err != nil {
-			serverLog.Println("Failed to create the LessonInfo:", err)
+			// serverLog.Println("Failed to create the LessonInfo:", err)
+			logger.Log(logger.ErrorLevel, fmt.Sprintf("Failed to create the LessonInfo: %v", err))
 		}
 	}()
 	var lesson LessonInfo
@@ -170,7 +173,8 @@ func MakeLessonInfo(dir string, lessonFile string, serverLog *log.Logger) Lesson
 	// Opens the requested markdown file
 	file, err := fs.ReadFile(fsys, lessonFile)
 	if err != nil {
-		serverLog.Panicln("There was an error getting the requested file:", err)
+		// serverLog.Panicln("There was an error getting the requested file:", err)
+		logger.Log(logger.ErrorLevel, fmt.Sprintf("There was an error getting the requested file: %v", err))
 	}
 
 	// Converts the returned []byte into a string for manipulation

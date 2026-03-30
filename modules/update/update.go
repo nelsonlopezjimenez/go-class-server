@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"localhost/CIS/modules/command"
 	"localhost/CIS/modules/external"
+	"localhost/CIS/modules/logger"
 
 	"localhost/CIS/modules/util"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -38,7 +38,7 @@ type GitError struct {
 var websitesPath = util.GetOSPaths()["websites"]
 
 // Creates a logger instance specifically for the update functions to inform user of update related events
-var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
+// var updateLogger = log.New(os.Stdout, "[Updater] ", log.Ltime)
 var ipData IPInfo
 
 // Update
@@ -49,10 +49,12 @@ var ipData IPInfo
 func (np NetworkPinger) Update() {
 	ipData = GetLocalIP()
 	if ipData.isConnected {
-		updateLogger.Println("IP Address is: ", ipData.IP.To4().String())
+		// updateLogger.Println("IP Address is: ", ipData.IP.To4().String())
+		logger.Log(logger.InfoLevel, fmt.Sprintf("IP Address in: %v", ipData.IP.To4().String()))
 		err := updateClassResources()
 		if err != nil {
-			updateLogger.Printf("Class Content failed to update: %v", err)
+			// updateLogger.Printf("Class Content failed to update: %v", err)
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Class Content failed to update: %v", err))
 		}
 	}
 
@@ -65,13 +67,15 @@ func (np NetworkPinger) Update() {
 	if ipData.isConnected {
 		err := checkForDependencies(np.Url)
 		if err != nil {
-			updateLogger.Println("[WARN]: Checking for dependencies failed:", err)
+			// updateLogger.Println("[WARN]: Checking for dependencies failed:", err)
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Checking for dependencies failed."))
 		} else {
 			hasCheckedDeps = true
 		}
 		err = updateClassResources()
 		if err != nil {
-			updateLogger.Printf("Class Content failed to update: %v", err)
+			// updateLogger.Printf("Class Content failed to update: %v", err)
+
 		}
 	}
 	for range checkInterval.C {
@@ -83,7 +87,8 @@ func (np NetworkPinger) Update() {
 				// external.UpdateSiteMetaData()
 				err := updateClassResources()
 				if err != nil {
-					updateLogger.Printf("Class Content failed to update: %v", err)
+					// updateLogger.Printf("Class Content failed to update: %v", err)
+					logger.Log(logger.WarnLevel, fmt.Sprintf("Class Content failed to update: %v", err))
 
 				}
 			}
@@ -104,9 +109,11 @@ func checkForDependencies(url string) error {
 		if os.IsNotExist(dirErr) {
 			output, err := external.GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "ClassServerResources")
 			if err != nil {
-				updateLogger.Println(err)
+				// updateLogger.Println(err)
+				logger.Log(logger.ErrorLevel, err.Error())
+
 			}
-			updateLogger.Printf("%s", output)
+			logger.Log(logger.InfoLevel, fmt.Sprintf("%s", output))
 		} else {
 			return fmt.Errorf("could not create ClassServerResources: %w", dirErr)
 		}
@@ -118,7 +125,8 @@ func checkForDependencies(url string) error {
 		if os.IsNotExist(websitesErr) {
 			err := os.Mkdir("C:/websites", 0755)
 			if err != nil {
-				updateLogger.Println("Creating websites dir:", err)
+				// updateLogger.Println("Creating websites dir:", err)
+				logger.Log(logger.ErrorLevel, fmt.Sprintf("Creating the websites directory failed: %v", err))
 			}
 		} else {
 			return fmt.Errorf("could not create websites directory: %w", websitesErr)
@@ -132,7 +140,8 @@ func updateClassResources() error {
 	if err != nil {
 		return err
 	}
-	updateLogger.Printf("%s", out)
+	// updateLogger.Printf("%s", out)
+	logger.Log(logger.InfoLevel, string(out))
 
 	return nil
 }
@@ -147,13 +156,15 @@ func GetLocalIP() IPInfo {
 	Info := IPInfo{nil, false}
 	networkInterfaces, err := net.Interfaces()
 	if err != nil {
-		updateLogger.Println("[WARN]: Could not get network interfaces")
+		// updateLogger.Println("[WARN]: Could not get network interfaces")
+		logger.Log(logger.WarnLevel, fmt.Sprintf("Could not get network interfaces: %v", err))
 	}
 
 	for _, networkInterface := range networkInterfaces {
 		addrs, err := networkInterface.Addrs()
 		if err != nil {
-			updateLogger.Println("[WARN]: Could not get IP addresses")
+			// updateLogger.Println("[WARN]: Could not get IP addresses")
+			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not get IP addresses: %v", err))
 		}
 
 		for _, addr := range addrs {
@@ -173,7 +184,8 @@ func (ge GitError) Error() string {
 }
 
 func retryCommand(ge GitError) {
-	updateLogger.Println("retrying...")
+	// updateLogger.Println("retrying...")
+	logger.Log(logger.InfoLevel, fmt.Sprintf("Retrying failed %v command", ge.FailedCmd[1]))
 	retryCmd := exec.Command(ge.FailedCmd[0], ge.FailedCmd[1:]...)
 
 	for i := range 5 {
@@ -181,9 +193,9 @@ func retryCommand(ge GitError) {
 
 		out, err := retryCmd.CombinedOutput()
 		if err != nil {
-			updateLogger.Printf("Retry %v failed.", i+1)
+			logger.Log(logger.InfoLevel, fmt.Sprintf("Retry %v failed.", i+1))
 		} else {
-			updateLogger.Printf("%s, err: %v", out, err)
+			logger.Log(logger.ErrorLevel, fmt.Sprintf("%s, err: %v", out, err))
 			break
 		}
 	}
@@ -192,7 +204,9 @@ func retryCommand(ge GitError) {
 func checkUserConfig() {
 	defer func() {
 		if err := recover(); err != nil {
-			updateLogger.Fatal("A serious issue has occurred:", err)
+			// updateLogger.Fatal("A serious issue has occurred:", err)
+			logger.Log(logger.ErrorLevel, fmt.Sprintf("A serious issue occurred: %v", err))
+			logger.Log(logger.WarnLevel, "Git dependent features may not behave as expected")
 		}
 	}()
 	_, err := exec.LookPath("git")

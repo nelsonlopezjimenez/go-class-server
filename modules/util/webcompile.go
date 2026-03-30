@@ -4,6 +4,7 @@ package util
 
 import (
 	"fmt"
+	"localhost/CIS/modules/logger"
 	"os"
 	"os/exec"
 	"strings"
@@ -93,7 +94,7 @@ func RunUserCode(code string, lang string) (_ []byte, err error) {
 	// Delete the tmp file now that we have finished with it
 	tmpErr := os.Remove(fileS)
 	if tmpErr != nil {
-		fmt.Println("There was an issue deleting the tmp code file:", tmpErr)
+		logger.Log(logger.WarnLevel, fmt.Sprintf("Could not delete temp code file: %v. This could be a permissions issue or it may be open in another program.", tmpErr))
 	}
 
 	return out, nil

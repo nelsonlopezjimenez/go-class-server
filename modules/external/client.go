@@ -396,7 +396,7 @@ func getSingleSiteMeta(domain string) (WebsiteInfo, error) {
 	return makeWebsiteInfo(singleSiteInfo), nil
 }
 
-func UpdateSingleInfo(domainUpdated string) error {
+func UpdateSingleInfo(domainUpdated string, delete bool) error {
 	fullLocalList, err := loadMetaFromFile()
 	if err != nil {
 		return err
@@ -415,6 +415,9 @@ func UpdateSingleInfo(domainUpdated string) error {
 
 	for i, localToUpdate := range fullLocalList {
 		if localToUpdate.Domain == domainUpdated {
+			if delete {
+				singleInfoToUpdate.State = "not_installed"
+			}
 			fullLocalList[i] = singleInfoToUpdate
 		}
 	}
