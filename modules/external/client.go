@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"localhost/CIS/modules/logger"
 	"localhost/CIS/modules/util"
 	"net/http"
 	"os"
@@ -158,7 +159,8 @@ func BuildWebsiteList() ([]WebsiteInfo, error) {
 
 	err := UpdateSiteMetaData(localWebsitesContents)
 	if err != nil {
-		fmt.Printf("err.Error(): %v\n", err.Error())
+		// fmt.Printf("err.Error(): %v\n", err.Error())
+		logger.Log(logger.WarnLevel, err.Error())
 	}
 
 	localData, err := loadMetaFromFile()

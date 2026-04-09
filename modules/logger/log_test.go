@@ -16,22 +16,22 @@ func TestLog(t *testing.T) {
 		{
 			InfoLevel,
 			"This is an info log",
-			fmt.Sprintf("[INFO] %s: This is an info log\n", time.Now().Format(time.DateTime)),
+			fmt.Sprintf("\033[32m[INFO] %s: This is an info log\033[0m\n", time.Now().Format(time.DateTime)),
 		},
 		{
 			DebugLevel,
 			"This is a debug log",
-			fmt.Sprintf("[DEBUG] %s: This is a debug log\n", time.Now().Format(time.DateTime)),
+			fmt.Sprintf("\033[36m[DEBUG] %s: This is a debug log\033[0m\n", time.Now().Format(time.DateTime)),
 		},
 		{
 			WarnLevel,
 			"This is a warning log",
-			fmt.Sprintf("[WARN] %s: the following error occurred: This is a warning log\n", time.Now().Format(time.DateTime)),
+			fmt.Sprintf("\033[33m[WARN] %s: This is a warning log\033[0m\n", time.Now().Format(time.DateTime)),
 		},
 		{
 			ErrorLevel,
 			"This is an error log",
-			fmt.Sprintf("[ERROR] %s: the following error occurred: This is an error log\n", time.Now().Format(time.DateTime)),
+			fmt.Sprintf("\031[32m[ERROR] %s: This is an error log\033[0m\n", time.Now().Format(time.DateTime)),
 		},
 	}
 
