@@ -13,11 +13,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"localhost/CIS/modules/controller"
 	"localhost/CIS/modules/logger"
+	"localhost/CIS/modules/services"
 	"localhost/CIS/modules/update"
 	"localhost/CIS/modules/util"
 
@@ -44,6 +46,15 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.Default()
+
+	videoWaitGroup := sync.WaitGroup{}
+	videoServiceChannel := make(chan struct{})
+	videoWaitGroup.Add(1)
+
+	go func() {
+		services.StartVideoService(videoServiceChannel, &videoWaitGroup)
+	}()
+
 	// server var changed to create an instance of http.Server and
 	// the default gin instance is passed as a handler to take advantage
 	// of the http.Server.Shutdown method to facilitate graceful shutdown
@@ -119,12 +130,19 @@ func main() {
 	// Everything beyond this line is logic for handling graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block the continuation of the code until signal is sent on the quit chan
 	<-quit
+
+	// Calling close on videoServiceChannel will send a message on the chan
+	// triggering the kill logic
+	close(videoServiceChannel)
+	// Block until the service has shutdown
+	videoWaitGroup.Wait()
 	logger.Log(logger.InfoLevel, "Gracefully shutting down the server.")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Log(logger.ErrorLevel, fmt.Sprintf("Server forced to shutdown:%v", err))
 	}

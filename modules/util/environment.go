@@ -12,6 +12,7 @@ var EnvDefaults = map[string]string{
 	"GIT_INSTALL_ADDR":      "http://192.168.1.47:3000/OfflineWebsites/",
 	"WEBSITES_REPO_ADDR":    "http://192.168.1.47:3000/api/v1/repos/ClassroomResources/",
 	"CIS_CLASS_SERVER_PORT": "22022",
+	"VIDEO_VIEWER_PATH":     GetOSPaths()["Public"] + "/video-viewer",
 }
 
 //? LoadEnv checks to see if a value exists as an environment variable

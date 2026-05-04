@@ -85,6 +85,21 @@ We welcome contributions to this project. Please follow these guidelines:
 4.  Include a description of the changes and the intent behind them in a `CONTRIBUTION.MD` file committed to your branch.
 5.  Submit a pull request.
 
+## How to push out new release of the class server
+
+To launch a new release, make sure you change the version number in the verson.json file located in the bin repo of the class server. Also ensure the version change has been reflected in version.ts in the frontend, environment.go in the backend, and the class server build.sh script (we should streamline this somehow).
+
+Run the deploy script in the frontend from the go-class-server-frontend directory:
+
+```sh
+npm run deploy
+```
+
+This will build the frontend, move the built files to the proper spot in the backend to be embedded, and then call the build script for the backend. The backend build script will then build the class server with the frontend files embedded into the executable, and then automatically push the new changes to the repo on Gitea 28. 
+
+*Note:* the version should be updated **before** executing the deploy script. It is the version number the launcher checks to initiate the update process.
+
+
 ## API and Routes
 
 ### `GET "/api/information/[filename]"`
