@@ -1,7 +1,11 @@
 package command
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
+	"localhost/CIS/modules/logger"
 	"os"
 	"os/exec"
 )
@@ -103,4 +107,79 @@ func (c Command) AddArgs(args ...CmdArgs) Command {
 // Returns whether arg is valid option or not
 func isValidOption(str string) bool {
 	return str != "" && str[0] == '-'
+}
+
+// CmdStdPipe
+//
+// Takes a pointer to exec.Cmd and starts the process
+// with the process' stdout and stderr piped to the
+// main stdout and stderr.
+// Note: It is interesting to see what Git outputs on
+// the stderr...
+func CmdStdPipe(cmd *exec.Cmd) {
+	// Create reader for process' stdout
+	reader, err := cmd.StdoutPipe()
+	if err != nil {
+		logger.Log(logger.ErrorLevel, err.Error())
+	}
+
+	// Create reader for process' stderr
+	errReader, err := cmd.StderrPipe()
+	if err != nil {
+		logger.Log(logger.ErrorLevel, err.Error())
+	}
+
+	// Buffer to store data from the pipes
+	buf := make([]byte, 1024)
+	errBuf := make([]byte, 1024)
+
+	// Goroutine to handle stdout pipe
+	go func() {
+		for {
+
+			n, err := reader.Read(buf)
+			if err != nil {
+				// if there is an error and it is EOF
+				// Break out of loop because the no data
+				// Will be passed and it is time to end.
+				// Otherwise, log the error and notify the user
+				if errors.Is(err, io.EOF) || errors.Is(err, fs.ErrClosed) {
+					break
+				} else {
+					logger.Log(logger.ErrorLevel, fmt.Sprintf("From Stdout: %v, %T", err.Error(), err))
+				}
+			}
+			if n == 0 {
+				break
+			}
+			logger.Log(logger.InfoLevel, string(buf[:n]))
+		}
+	}()
+
+	// Goroutine to handle stdout pipe
+	go func() {
+		for {
+			n, err := errReader.Read(errBuf)
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				} else {
+					logger.Log(logger.ErrorLevel, fmt.Sprintf("From Stderr: %v", err.Error()))
+				}
+			}
+			if n == 0 {
+				break
+			}
+			logger.Log(logger.WarnLevel, string(errBuf[:n]))
+
+		}
+	}()
+
+	//  Start the process
+	cmd.Start()
+	// Wait for the process to end
+	cmd.Wait()
+	// Close the read streams
+	reader.Close()
+	errReader.Close()
 }

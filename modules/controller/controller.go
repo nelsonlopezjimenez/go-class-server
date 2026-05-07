@@ -107,27 +107,27 @@ func HandleUserCode(ctx *gin.Context) {
 func HandleWebsiteManagement(ctx *gin.Context) {
 	type ReturnOutput map[string]string
 	submodule := ctx.Param("submodule")
-	command := ctx.Param("command")
+	cmd := ctx.Param("command")
 	var consoleOutput string
-	switch command {
+	switch cmd {
 	case "update":
-		consoleOutputBytes, err := external.GitPull(filePath["websites"] + "/" + submodule)
-		if err != nil {
-			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not download new files: %v", err))
+		external.GitPull(filePath["websites"] + "/" + submodule)
+		// if err != nil {
+		// 	logger.Log(logger.WarnLevel, fmt.Sprintf("Could not download new files: %v", err))
 
-			ctx.JSON(500, err.Error())
-			return
-		}
-		err = external.UpdateSingleInfo(submodule, false)
+		// 	ctx.JSON(500, err.Error())
+		// 	return
+		// }
+		err := external.UpdateSingleInfo(submodule, false)
 		if err != nil {
 			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not update site data: %v", err.Error()))
 
 			ctx.JSON(500, err.Error())
 			return
 		}
-		consoleOutput = string(consoleOutputBytes)
+		// consoleOutput = string(consoleOutputBytes)
 	case "install":
-		consoleOutputBytes, err := external.GitClone(filePath["websites"], util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
+		err := external.GitClone(filePath["websites"], util.LoadEnv("GIT_INSTALL_ADDR")+submodule+".git", submodule)
 		if err != nil {
 			logger.Log(logger.WarnLevel, fmt.Sprintf("Could not download %v: %v", submodule, err))
 
@@ -142,7 +142,7 @@ func HandleWebsiteManagement(ctx *gin.Context) {
 			return
 		}
 
-		consoleOutput = string(consoleOutputBytes)
+		// consoleOutput = string(consoleOutputBytes)
 	case "delete":
 		// delete specified domain dir
 		err := util.DeleteSite(filePath["websites"] + "/" + submodule)

@@ -5,14 +5,17 @@ import "os"
 
 //? This is the variables that could be modified with environment variables
 var EnvDefaults = map[string]string{
-	"RELEASE_VERSION":       "2.3.1",
-	"RELEASE_DATE":          "2/11/26",
-	"WEBSITES_GITEA_ADDR":   "http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200",
-	"UPDATE_IP":             "http://192.168.1.28:3000",
-	"GIT_INSTALL_ADDR":      "http://192.168.1.47:3000/OfflineWebsites/",
-	"WEBSITES_REPO_ADDR":    "http://192.168.1.47:3000/api/v1/repos/ClassroomResources/",
-	"CIS_CLASS_SERVER_PORT": "22022",
-	"VIDEO_VIEWER_PATH":     GetOSPaths()["Public"] + "/video-viewer",
+	"RELEASE_VERSION":                    "2.3.1",
+	"RELEASE_DATE":                       "2/11/26",
+	"WEBSITES_GITEA_ADDR":                "http://192.168.1.47:3000/api/v1/repos/search?uid=6&limit=200",
+	"UPDATE_IP":                          "http://192.168.1.28:3000",
+	"GIT_INSTALL_ADDR":                   "http://192.168.1.47:3000/OfflineWebsites/",
+	"WEBSITES_REPO_ADDR":                 "http://192.168.1.47:3000/api/v1/repos/ClassroomResources/",
+	"CIS_CLASS_SERVER_PORT":              "22022",
+	"VIDEO_VIEWER_PATH":                  GetOSPaths()["Public"] + "/video-viewer",
+	"VIDEO_VIEWER_PORT":                  "3210",
+	"VIDEO_VIEWER_MONGODB_URI":           "mongodb://localhost:27017/videosMasterDb",
+	"VIDEO_VIEWER_MONGODB_MASTER_DB_URI": "mongodb://192.168.1.29:3010/videosMasterDb",
 }
 
 //? LoadEnv checks to see if a value exists as an environment variable

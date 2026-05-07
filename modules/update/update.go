@@ -82,7 +82,7 @@ func (np NetworkPinger) Update() {
 		ipData = GetLocalIP()
 
 		if ipData.isConnected {
-			fmt.Println(time.Now())
+			// fmt.Println(time.Now())
 			if hasCheckedDeps {
 				// external.UpdateSiteMetaData()
 				err := updateClassResources()
@@ -107,13 +107,13 @@ func checkForDependencies(url string) error {
 	_, dirErr := os.Stat(util.GetDepPath())
 	if dirErr != nil {
 		if os.IsNotExist(dirErr) {
-			output, err := external.GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "ClassServerResources")
+			err := external.GitClone(".", url+"/ClassroomResources/ClassServerResources.git", "ClassServerResources")
 			if err != nil {
 				// updateLogger.Println(err)
 				logger.Log(logger.ErrorLevel, err.Error())
 
 			}
-			logger.Log(logger.InfoLevel, fmt.Sprintf("%s", output))
+			// logger.Log(logger.InfoLevel, fmt.Sprintf("%s", output))
 		} else {
 			return fmt.Errorf("could not create ClassServerResources: %w", dirErr)
 		}
@@ -136,12 +136,12 @@ func checkForDependencies(url string) error {
 }
 
 func updateClassResources() error {
-	out, err := external.GitPull(util.GetDepPath())
-	if err != nil {
-		return err
-	}
+	external.GitPull(util.GetDepPath())
+	// if err != nil {
+	// 	return err
+	// }
 	// updateLogger.Printf("%s", out)
-	logger.Log(logger.InfoLevel, string(out))
+	// logger.Log(logger.InfoLevel, fmt.Sprintf("from update: %v", string(out)))
 
 	return nil
 }

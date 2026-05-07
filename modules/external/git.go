@@ -11,10 +11,11 @@ import (
 //
 // Creates a command.Command instance of the git pull command and executes it
 // updating the repo named in the argument
-func GitPull(repoPath string) ([]byte, error) {
+func GitPull(repoPath string) {
 	pull := command.MakeGitCmd(repoPath, "pull", "--force", "origin", "main")
 	// return cmdWithOutput(pull)
-	return pull.Cmd.CombinedOutput()
+	command.CmdStdPipe(pull.Cmd)
+	// return pull.Cmd.CombinedOutput()
 }
 
 // GitClone
@@ -25,14 +26,15 @@ func GitPull(repoPath string) ([]byte, error) {
 // repoName: name of the repo. This field is required no matter
 // the name desired. This allows to check for an existing dir by the
 // same name.
-func GitClone(repoPath string, url string, repoName string) ([]byte, error) {
+func GitClone(repoPath string, url string, repoName string) error {
 	_, err := os.Stat(repoPath + "/" + repoName)
 	if err == nil {
-		return nil, fmt.Errorf("repo already exists")
+		return fmt.Errorf("repo already exists")
 	}
 
 	clone := command.MakeGitCmd(repoPath, "clone", url)
+	command.CmdStdPipe(clone.Cmd)
 
 	// return cmdWithOutput(clone)
-	return clone.Cmd.CombinedOutput()
+	return nil
 }
