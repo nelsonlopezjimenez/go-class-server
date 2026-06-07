@@ -123,7 +123,7 @@ func checkForDependencies(url string) error {
 	if websitesErr != nil {
 		fmt.Println("No websites folder")
 		if os.IsNotExist(websitesErr) {
-			err := os.Mkdir("C:/websites", 0755)
+			err := os.Mkdir(websitesPath, 0755)
 			if err != nil {
 				// updateLogger.Println("Creating websites dir:", err)
 				logger.Log(logger.ErrorLevel, fmt.Sprintf("Creating the websites directory failed: %v", err))

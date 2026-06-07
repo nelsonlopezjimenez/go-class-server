@@ -12,3 +12,4 @@ modifyHTML.sh
 /ClassServerResources/**/*
 bin
 modifyHTML.sh
+/errLog.txt
