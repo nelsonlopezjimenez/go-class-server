@@ -161,3 +161,7 @@ func CheckForSymlink(linkName string) error {
 	}
 	return nil
 }
+
+func IsWindows() bool {
+	return runtime.GOOS == "windows"
+}
