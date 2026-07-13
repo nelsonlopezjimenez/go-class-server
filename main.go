@@ -30,7 +30,6 @@ var filePath = util.GetOSPaths()
 // The main package must contain a main function which will be executed on run
 func main() {
 	godotenv.Load() //? load .env file if it exists
-
 	//! All variables that could be modified by .env should use
 	//! util.LoadEnv(key string) and not try to access the environment directly
 	releaseVersion := util.LoadEnv("RELEASE_VERSION")
@@ -44,6 +43,7 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
 	// server var changed to create an instance of http.Server and
 	// the default gin instance is passed as a handler to take advantage
 	// of the http.Server.Shutdown method to facilitate graceful shutdown
