@@ -68,7 +68,7 @@ func (np NetworkPinger) Update() {
 		err := checkForDependencies(np.Url)
 		if err != nil {
 			// updateLogger.Println("[WARN]: Checking for dependencies failed:", err)
-			logger.Log(logger.WarnLevel, fmt.Sprintf("Checking for dependencies failed."))
+			logger.Log(logger.WarnLevel, "Checking for dependencies failed.")
 		} else {
 			hasCheckedDeps = true
 		}
@@ -123,7 +123,7 @@ func checkForDependencies(url string) error {
 	if websitesErr != nil {
 		fmt.Println("No websites folder")
 		if os.IsNotExist(websitesErr) {
-			err := os.Mkdir("C:/websites", 0755)
+			err := os.Mkdir(websitesPath, 0755)
 			if err != nil {
 				// updateLogger.Println("Creating websites dir:", err)
 				logger.Log(logger.ErrorLevel, fmt.Sprintf("Creating the websites directory failed: %v", err))
@@ -202,6 +202,7 @@ func retryCommand(ge GitError) {
 }
 
 func checkUserConfig() {
+	var userName string
 	defer func() {
 		if err := recover(); err != nil {
 			// updateLogger.Fatal("A serious issue has occurred:", err)
@@ -213,7 +214,11 @@ func checkUserConfig() {
 	if err != nil {
 		panic("Git is not installed on your system.")
 	}
-	userName := os.Getenv("USERNAME")
+	if util.IsWindows() {
+		userName = os.Getenv("USERNAME")
+	} else {
+		userName = os.Getenv("USER")
+	}
 	for Key, Value := range map[string]string{
 		"user.name":  userName,
 		"user.email": fmt.Sprintf("%s@edcc.edu", userName),
